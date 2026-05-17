@@ -1,0 +1,22 @@
+project_name: "TFM - Dynamic Risk Management & Portfolio Rebalancing"
+tickers: ['AAPL', 'MSFT', 'SPY']
+start_date: '2018-01-01'
+end_date: '2023-12-31'
+timeframe: '4Hour'
+initial_capital: 100000.0
+
+data_sources:
+  tiingo:
+    api_url: "https://api.tiingo.com/iex"
+  fred:
+    api_url: "https://api.stlouisfed.org/fred/series/observations"
+
+model:
+  xgboost:
+    n_estimators: 100
+    learning_rate: 0.05
+    max_depth: 5
+
+risk:
+  max_drawdown_per_trade: 0.02
+  atr_multiplier: 2.0
