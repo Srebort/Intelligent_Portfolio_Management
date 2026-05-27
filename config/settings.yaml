@@ -1,22 +1,118 @@
 project_name: "TFM - Dynamic Risk Management & Portfolio Rebalancing"
-tickers: ['AAPL', 'MSFT', 'SPY']
+tickers:
+    # --- Índices y Benchmarks ---
+    - 'SPY'   # S&P 500
+    - 'QQQ'   # Nasdaq 100
+    - 'DIA'   # Dow Jones
+    - 'IWM'   # Russell 2000
+
+    # --- Cobertura y Refugio ---
+    - 'TLT'   # Bonos Tesoro 20+ años
+    - 'IEF'   # Bonos Tesoro 7-10 años
+    - 'GLD'   # Oro
+    - 'SLV'   # Plata
+
+    # --- Big Tech y Semiconductores ---
+    - 'AAPL'  # Apple
+    - 'MSFT'  # Microsoft
+    - 'NVDA'  # Nvidia
+    - 'GOOGL' # Alphabet
+    - 'META'  # Meta
+    - 'AMD'   # Advanced Micro Devices
+    - 'TSM'   # Taiwan Semiconductor
+    - 'ASML'  # ASML Holding (Europa)
+
+    # --- Ciberseguridad y Nube ---
+    - 'CRWD'  # CrowdStrike
+    - 'PANW'  # Palo Alto Networks
+    - 'SNOW'  # Snowflake
+    - 'PLTR'  # Palantir
+
+    # --- Finanzas y Cripto-Proxies ---
+    - 'JPM'   # JPMorgan Chase
+    - 'BAC'   # Bank of America
+    - 'V'     # Visa
+    - 'BRK-B' # Berkshire Hathaway (nota: Tiingo usa BRK-B, no BRK.B)
+    - 'COIN'  # Coinbase
+    - 'MSTR'  # MicroStrategy (Proxy de Bitcoin)
+
+    # --- Salud, Farma y Biotecnología ---
+    - 'JNJ'   # Johnson & Johnson
+    - 'UNH'   # UnitedHealth
+    - 'LLY'   # Eli Lilly
+    - 'NVO'   # Novo Nordisk (Europa)
+    - 'ABBV'  # AbbVie
+    - 'ISRG'  # Intuitive Surgical
+
+    # --- Consumo Discrecional y Viajes ---
+    - 'AMZN'  # Amazon
+    - 'WMT'   # Walmart
+    - 'PG'    # Procter & Gamble
+    - 'KO'    # Coca-Cola
+    - 'MCD'   # McDonald's
+    - 'HD'    # Home Depot
+    - 'UBER'  # Uber
+    - 'ABNB'  # Airbnb
+    - 'DAL'   # Delta Air Lines
+
+    # --- Energía e Industria ---
+    - 'XOM'   # Exxon Mobil
+    - 'CVX'   # Chevron
+    - 'CAT'   # Caterpillar
+    - 'UNP'   # Union Pacific
+    - 'GE'    # General Electric
+
+    # --- Aeroespacial y Defensa ---
+    - 'LMT'   # Lockheed Martin
+    - 'RTX'   # Raytheon Technologies
+    - 'BA'    # Boeing
+
+    # --- Materiales y Minería ---
+    - 'FCX'   # Freeport-McMoRan (Cobre)
+    - 'NEM'   # Newmont (Oro)
+    - 'RIO'   # Rio Tinto
+    - 'LIN'   # Linde
+
+    # --- Bienes Raíces (REITs) y Utilities ---
+    - 'O'     # Realty Income
+    - 'PLD'   # Prologis
+    - 'AMT'   # American Tower
+    - 'NEE'   # NextEra Energy
+
+    # --- Autos e Innovación ---
+    - 'TSLA'  # Tesla
+    - 'TM'    # Toyota (Asia)
+    - 'F'     # Ford Motor
+    - 'NFLX'  # Netflix
+
+# =============================================================
+# CONFIGURACIÓN TEMPORAL
+# =============================================================
 start_date: '2018-01-01'
-end_date: '2023-12-31'
-timeframe: '4Hour'
+end_date: '2026-05-01'
 initial_capital: 100000.0
 
+# Temporalidades disponibles para análisis multi-timeframe
+# La estrategia principal usa timeframe_primary; los demás son contexto
+timeframes:
+  - '1Hour'   # 1 hora  — señales de entrada de precisión
+  - '4Hour'   # 4 horas — temporalidad principal de la estrategia
+  - '1Day'    # Diario  — tendencia de medio plazo
+  - '1Week'   # Semanal — tendencia de largo plazo / contexto macro
+
+timeframe_primary: '4Hour'  # Temporalidad principal para el backtest
+
+# =============================================================
+# FUENTES DE DATOS
+# =============================================================
 data_sources:
   tiingo:
     api_url: "https://api.tiingo.com/iex"
   fred:
     api_url: "https://api.stlouisfed.org/fred/series/observations"
-
-model:
-  xgboost:
-    n_estimators: 100
-    learning_rate: 0.05
-    max_depth: 5
-
-risk:
-  max_drawdown_per_trade: 0.02
-  atr_multiplier: 2.0
+    series:
+      - 'FEDFUNDS'   # Tipo de interés de la Fed
+      - 'CPIAUCSL'   # IPC (Inflación)
+      - 'UNRATE'     # Tasa de desempleo
+      - 'T10Y2Y'     # Spread bono 10Y-2Y (indicador recesión)
+      - 'VIXCLS'     # VIX (Índice de volatilidad / Miedo)

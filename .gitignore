@@ -1,16 +1,52 @@
-# Environments
-venv/
+# =============================================================
+# .gitignore — TFM Intelligent Portfolio Management
+# =============================================================
+
+# --- Credenciales (NUNCA subir al repo) ---
 .env
 
-# Data
-data/
-!data/**/.gitkeep
+# --- Entornos virtuales ---
+venv/
+.venv/
+env/
 
-# Python cache
+# --- Datos (ignorar contenido, mantener estructura con .gitkeep) ---
+# Hay que ignorar los archivos dentro de las carpetas, NO las carpetas enteras
+# para que los .gitkeep funcionen correctamente
+data/raw/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# --- Resultados (mismo patrón) ---
+results/figures/*
+results/logs/*
+results/reports/*
+!results/figures/.gitkeep
+!results/logs/.gitkeep
+!results/reports/.gitkeep
+
+# --- Python cache ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
+.Python
 
-# Results & Logs
-results/
-!results/**/.gitkeep
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb
+
+# --- IDEs ---
+.vscode/
+.idea/
+
+# --- Word / Office temp files ---
+~$*
+*.tmp
+
+# --- Logs ---
+*.log
