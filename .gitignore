@@ -1,0 +1,16 @@
+# Environments
+venv/
+.env
+
+# Data
+data/
+!data/**/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Results & Logs
+results/
+!results/**/.gitkeep
