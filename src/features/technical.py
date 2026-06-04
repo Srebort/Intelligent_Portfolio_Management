@@ -21,10 +21,11 @@ SOPORTE MULTI-TIMEFRAME:
 
 Funciones disponibles:
     - calculate_rsi()             → RSI (Relative Strength Index)
-    - calculate_atr()             → ATR (Average True Range)
+    - calculate_atr()             → ATR (Average True Range) con manejo de gaps
+    - calculate_natr()            → NATR (ATR normalizado por precio de cierre)
     - calculate_sma()             → SMA (Simple Moving Average)
     - calculate_ema()             → EMA (Exponential Moving Average)
-    - calculate_moving_averages() → Conjunto de SMAs y EMAs en 4 ventanas
+    - calculate_moving_averages() → Conjunto de SMAs y EMAs en 5 ventanas
     - add_all_features()          → Añade todos los indicadores al DataFrame
 """
 
@@ -135,16 +136,30 @@ def calculate_atr(
     Calcula el ATR (Average True Range), indicador de volatilidad del mercado.
 
     El ATR mide el rango medio de movimiento de precio en las últimas N velas.
-    Se usa en este TFM para calcular el tamaño del stop loss (ATR × multiplicador).
+    Es el pilar fundamental del módulo RiskManager para el dimensionamiento
+    de posiciones (Position Sizing): stop loss = precio_entrada - ATR * multiplicador.
+
+    MANEJO DE GAPS (huecos entre sesiones):
+        Un gap ocurre cuando el precio de apertura de hoy es muy diferente al
+        cierre de ayer (ej. tras una noticia fuera de horario). En ese caso,
+        High - Low subestimaría el verdadero rango de la jornada.
+        Por eso, el True Range incorpora el cierre anterior con shift(1):
+
+        Ejemplo de gap alcista:
+            Cierre ayer = 100  |  Apertura hoy = 108  |  High = 112  |  Low = 107
+            TR1 = High - Low          = 112 - 107 = 5   ← rango de la vela
+            TR2 = |High - Close_prev| = |112 - 100| = 12 ← captura el gap
+            TR3 = |Low  - Close_prev| = |107 - 100| = 7  ← captura el gap
+            True Range = max(5, 12, 7) = 12  ✓ (el rango real fue 12, no 5)
 
     FÓRMULA:
-        El True Range (TR) es el máximo de tres distancias:
-            TR = max(
-                High - Low,              ← rango de la vela actual
-                |High - Close_anterior|, ← distancia máximo vs cierre previo
-                |Low  - Close_anterior|  ← distancia mínimo vs cierre previo
-            )
-        ATR = media exponencial de Wilder del TR durante 'period' velas.
+        TR = max(
+            High - Low,              ← rango de la vela actual
+            |High - Close_anterior|, ← gap alcista + rango superior
+            |Low  - Close_anterior|  ← gap bajista + rango inferior
+        )
+        ATR = media exponencial de Wilder(TR, period)
+              con alpha = 1/period (equivalente a com = period-1)
 
     ANTI-LOOKAHEAD BIAS:
         shift(1) desplaza el cierre una posición hacia atrás (cierre de ayer).
@@ -166,23 +181,90 @@ def calculate_atr(
             logger.error("Columna '%s' no encontrada en el DataFrame.", col)
             return pd.Series(dtype=float, index=df.index, name=f"ATR_{period}")
 
-    # Cierre de la vela anterior (shift hacia atrás: sin lookahead bias)
+    # Cierre de la vela anterior — captura los gaps entre sesiones
+    # shift(1): desplaza hacia atrás, sin lookahead bias
     cierre_anterior = df[close_col].shift(1)
 
-    # Calcular las tres componentes del True Range
-    tr1 = df[high_col] - df[low_col]                   # rango de la vela
-    tr2 = (df[high_col] - cierre_anterior).abs()        # distancia high vs prev close
-    tr3 = (df[low_col]  - cierre_anterior).abs()        # distancia low  vs prev close
+    # Las tres componentes del True Range
+    tr1 = df[high_col] - df[low_col]                   # rango interno de la vela
+    tr2 = (df[high_col] - cierre_anterior).abs()        # gap alcista + rango superior
+    tr3 = (df[low_col]  - cierre_anterior).abs()        # gap bajista + rango inferior
 
-    # True Range es el máximo de las tres componentes
+    # True Range = máximo de las tres componentes (captura el movimiento real)
     true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    true_range.name = "TR"
 
-    # ATR: media exponencial de Wilder del True Range
+    # ATR: media exponencial de Wilder
+    # com = period - 1  ⇔  alpha = 1/period (fórmula original de J. Welles Wilder)
     atr = true_range.ewm(com=period - 1, adjust=False, min_periods=period).mean()
 
     atr.name = f"ATR_{period}"
     logger.debug("ATR(%d) calculado. Filas válidas: %d", period, atr.notna().sum())
     return atr
+
+
+# ===========================================================================
+# NATR — Normalized Average True Range
+# ===========================================================================
+
+def calculate_natr(
+    df: pd.DataFrame,
+    period: int = 14,
+    high_col:  str = "high",
+    low_col:   str = "low",
+    close_col: str = "close",
+) -> pd.Series:
+    """
+    Calcula el NATR (Normalized Average True Range), versión porcentual del ATR.
+
+    El problema del ATR absoluto es que no permite comparar la volatilidad
+    entre activos de precios muy distintos:
+        - AAPL a 180$  con ATR = 3.0  → volatilidad = 1.67%
+        - NVDA a 900$  con ATR = 3.0  → volatilidad = 0.33%
+    Ambos tienen el mismo ATR pero AAPL es 5 veces más volátil en términos relativos.
+
+    El NATR resuelve esto dividiendo el ATR por el precio de cierre y
+    expressándolo en porcentaje:
+
+    FÓRMULA:
+        NATR = (ATR / Close) × 100
+
+    USO EN EL TFM:
+        El NATR permite al RiskManager comparar la volatilidad de todos los
+        activos del universo (de 10$ a 500$+) en la misma escala porcentual,
+        facilitando el dimensionamiento de posiciones homogéneo.
+
+    ANTI-LOOKAHEAD BIAS:
+        Hereda la garantía del ATR. El Close usado para normalizar es el de
+        la misma vela (cierre de la barra actual), no del futuro.
+
+    Args:
+        df        (pd.DataFrame): DataFrame con columnas high, low y close.
+        period    (int):          Período del ATR subyacente. Por defecto 14.
+        high_col  (str):          Columna del máximo.
+        low_col   (str):          Columna del mínimo.
+        close_col (str):          Columna del cierre.
+
+    Returns:
+        pd.Series: NATR en porcentaje (%) con el mismo índice que df.
+                   Ejemplo: NATR = 1.5 significa que la volatilidad media
+                   de las últimas 14 velas fue el 1.5% del precio.
+    """
+    if close_col not in df.columns:
+        logger.error("Columna '%s' no encontrada para calcular NATR.", close_col)
+        return pd.Series(dtype=float, index=df.index, name=f"NATR_{period}")
+
+    # Calcular el ATR con la misma función (reutilización de código)
+    atr = calculate_atr(df, period=period,
+                        high_col=high_col, low_col=low_col, close_col=close_col)
+
+    # Normalizar: ATR / precio_cierre * 100 → expresado en porcentaje
+    # replace(0, NaN): evitar división por cero en precios nulos
+    natr = (atr / df[close_col].replace(0, pd.NA)) * 100
+
+    natr.name = f"NATR_{period}"
+    logger.debug("NATR(%d) calculado. Filas válidas: %d", period, natr.notna().sum())
+    return natr
 
 
 # ===========================================================================
@@ -376,8 +458,12 @@ def add_all_features(
         df_out, period=rsi_period, price_col=price_col
     )
 
-    # ---- 2. ATR ------------------------------------------------
+    # ---- 2. ATR y NATR -----------------------------------------
     df_out[f"ATR_{atr_period}"] = calculate_atr(
+        df_out, period=atr_period,
+        high_col=high_col, low_col=low_col, close_col=close_col,
+    )
+    df_out[f"NATR_{atr_period}"] = calculate_natr(
         df_out, period=atr_period,
         high_col=high_col, low_col=low_col, close_col=close_col,
     )
@@ -399,9 +485,9 @@ def add_all_features(
         df_out = df_out.sort_index()
 
     columnas_indicadores = [
-        f"RSI_{rsi_period}", f"ATR_{atr_period}",
-        "SMA_9", "SMA_21", "SMA_50", "SMA_200",
-        "EMA_9", "EMA_21", "EMA_50", "EMA_200",
+        f"RSI_{rsi_period}", f"ATR_{atr_period}", f"NATR_{atr_period}",
+        "SMA_9", "SMA_21", "SMA_50", "SMA_100", "SMA_200",
+        "EMA_9", "EMA_21", "EMA_50", "EMA_100", "EMA_200",
     ]
     columnas_validas = [c for c in columnas_indicadores if c in df_out.columns]
 
@@ -457,7 +543,7 @@ if __name__ == "__main__":
 
     # Mostrar resultado
     columnas_indicadores = [
-        "close", "RSI_14", "ATR_14",
+        "close", "RSI_14", "ATR_14", "NATR_14",
         "SMA_9", "SMA_21", "SMA_50",
         "EMA_9", "EMA_21", "EMA_50",
     ]
@@ -479,6 +565,10 @@ if __name__ == "__main__":
     atr = df_features["ATR_14"].dropna()
     print(f"ATR_14  | Min: {atr.min():.4f} | Max: {atr.max():.4f} | "
           f"[OK: siempre positivo: {(atr > 0).all()}]")
+
+    natr = df_features["NATR_14"].dropna()
+    print(f"NATR_14 | Min: {natr.min():.4f}% | Max: {natr.max():.4f}% | "
+          f"[OK: siempre positivo: {(natr > 0).all()}]")
 
     print(f"Indice ordenado (req. anti-bias): {df_features.index.is_monotonic_increasing}")
     print(f"Dimensiones finales del dataset : {df_features.shape}")
