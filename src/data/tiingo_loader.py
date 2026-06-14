@@ -405,8 +405,8 @@ if __name__ == "__main__":
     # Descargar velas de 4 horas para el Q1 2024
     df_test = loader.download_ticker(
         ticker=ticker_prueba,
-        start_date="2024-01-01",
-        end_date="2024-03-31",
+        start_date="2018-01-01",
+        end_date="2026-01-01",
         resample_freq="4Hour",
     )
 
