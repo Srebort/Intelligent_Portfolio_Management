@@ -26,6 +26,8 @@ Funciones disponibles:
     - calculate_sma()             → SMA (Simple Moving Average)
     - calculate_ema()             → EMA (Exponential Moving Average)
     - calculate_moving_averages() → Conjunto de SMAs y EMAs en 5 ventanas
+    - calculate_atr_squeeze()     → Ratio de compresión de volatilidad
+    - calculate_bullish_divergence() → Divergencias alcistas (Precio vs RSI)
     - add_all_features()          → Añade todos los indicadores al DataFrame
 """
 
@@ -398,6 +400,71 @@ def calculate_moving_averages(
 
 
 # ===========================================================================
+# FEATURES AVANZADAS (SQUEEZE Y DIVERGENCIAS)
+# ===========================================================================
+
+def calculate_atr_squeeze(
+    df: pd.DataFrame,
+    atr_col: str,
+    window: int = 20,
+) -> pd.Series:
+    """
+    Calcula el ratio de compresión de volatilidad (atr_squeeze).
+
+    Es la relación entre el ATR actual y su media móvil de N períodos.
+    Valores < 1.0 indican compresión de volatilidad (posible breakout inminente).
+    Valores > 1.0 indican expansión de volatilidad.
+    """
+    if atr_col not in df.columns:
+        logger.error("Columna '%s' no encontrada para atr_squeeze.", atr_col)
+        return pd.Series(dtype=float, index=df.index, name="atr_squeeze")
+
+    atr_sma = df[atr_col].rolling(window=window, min_periods=window).mean()
+    squeeze = df[atr_col] / atr_sma.replace(0, pd.NA)
+    
+    squeeze.name = "atr_squeeze"
+    return squeeze
+
+def calculate_bullish_divergence(
+    df: pd.DataFrame,
+    rsi_col: str,
+    low_col: str = "low",
+    window: int = 20,
+) -> pd.Series:
+    """
+    Detecta divergencias alcistas (is_bullish_divergence) de forma vectorizada.
+
+    Una divergencia alcista ocurre cuando el precio marca un nuevo mínimo
+    (Lower Low), pero el RSI marca un mínimo más alto (Higher Low), indicando
+    pérdida de momentum bajista.
+
+    ANTI-LOOKAHEAD BIAS:
+        Compara el mínimo actual con el mínimo rodante del PASADO (excluyendo
+        la vela actual con shift(1)).
+    """
+    if rsi_col not in df.columns or low_col not in df.columns:
+        logger.error("Columnas necesarias no encontradas para divergencia.")
+        return pd.Series(dtype=float, index=df.index, name="is_bullish_divergence")
+
+    # Mínimos del pasado (sin incluir vela actual)
+    min_precio_previo = df[low_col].shift(1).rolling(window=window).min()
+    min_rsi_previo = df[rsi_col].shift(1).rolling(window=window).min()
+    
+    # 1. El precio actual hace un nuevo mínimo comparado con la ventana
+    lower_low_price = df[low_col] < min_precio_previo
+    
+    # 2. El RSI actual NO hace un nuevo mínimo (es mayor al anterior)
+    higher_low_rsi = df[rsi_col] > min_rsi_previo
+    
+    # 3. Filtro extra: el RSI debe estar en zona relativamente baja para ser válido
+    rsi_bajo = df[rsi_col] < 45
+    
+    divergencia = lower_low_price & higher_low_rsi & rsi_bajo
+    
+    resultado = pd.Series(np.where(divergencia, 1, 0), index=df.index, name="is_bullish_divergence")
+    return resultado
+
+# ===========================================================================
 # PIPELINE COMPLETO: AÑADIR TODOS LOS INDICADORES AL DATAFRAME
 # ===========================================================================
 
@@ -468,11 +535,26 @@ def add_all_features(
         high_col=high_col, low_col=low_col, close_col=close_col,
     )
 
-    # ---- 3. Medias Móviles (SMA + EMA en 4 ventanas) -----------
+    # ---- 3. Medias Móviles (SMA + EMA en 5 ventanas) -----------
     df_medias = calculate_moving_averages(df_out, price_col=price_col)
     df_out = pd.concat([df_out, df_medias], axis=1)
 
-    # ---- 4. Verificación anti-lookahead bias -------------------
+    # ---- 4. Distancias y Pendientes de SMA 50 y 200 ------------
+    for v in [50, 200]:
+        sma_col = f"SMA_{v}"
+        # Distancia porcentual del cierre a la media (Mean Reversion Filter)
+        df_out[f"dist_SMA_{v}"] = ((df_out[close_col] - df_out[sma_col]) / df_out[sma_col]) * 100
+        
+        # Pendiente (Momentum) medida en un lookback de 5 periodos
+        df_out[f"slope_SMA_{v}"] = ((df_out[sma_col] - df_out[sma_col].shift(5)) / df_out[sma_col].shift(5)) * 100
+
+    # ---- 5. Compresión ATR y Divergencias RSI ------------------
+    df_out["atr_squeeze"] = calculate_atr_squeeze(df_out, atr_col=f"ATR_{atr_period}", window=20)
+    df_out["is_bullish_divergence"] = calculate_bullish_divergence(
+        df_out, rsi_col=f"RSI_{rsi_period}", low_col=low_col, window=20
+    )
+
+    # ---- 6. Verificación anti-lookahead bias -------------------
     # El índice debe estar ordenado de forma ascendente (más antiguo primero).
     # Si el índice está correctamente ordenado, las operaciones rolling
     # NUNCA pueden acceder a datos futuros por construcción de pandas.
@@ -488,6 +570,8 @@ def add_all_features(
         f"RSI_{rsi_period}", f"ATR_{atr_period}", f"NATR_{atr_period}",
         "SMA_9", "SMA_21", "SMA_50", "SMA_100", "SMA_200",
         "EMA_9", "EMA_21", "EMA_50", "EMA_100", "EMA_200",
+        "dist_SMA_50", "dist_SMA_200", "slope_SMA_50", "slope_SMA_200",
+        "atr_squeeze", "is_bullish_divergence"
     ]
     columnas_validas = [c for c in columnas_indicadores if c in df_out.columns]
 
@@ -544,8 +628,8 @@ if __name__ == "__main__":
     # Mostrar resultado
     columnas_indicadores = [
         "close", "RSI_14", "ATR_14", "NATR_14",
-        "SMA_9", "SMA_21", "SMA_50",
-        "EMA_9", "EMA_21", "EMA_50",
+        "dist_SMA_50", "slope_SMA_50", "dist_SMA_200", "slope_SMA_200",
+        "atr_squeeze", "is_bullish_divergence"
     ]
     columnas_presentes = [c for c in columnas_indicadores if c in df_features.columns]
 
