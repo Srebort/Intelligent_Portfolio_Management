@@ -231,6 +231,41 @@ class TiingoLoader:
         # Parsear el JSON y devolver el DataFrame limpio
         return self._parse_response(raw_data, ticker)
 
+    def download_daily_historical_ticker(
+        self,
+        ticker: str,
+        start_date: str,
+        end_date: str
+    ) -> pd.DataFrame:
+        """
+        Descarga el histórico de precios OHLCV diarios desde el endpoint EOD de Tiingo.
+        Útil para retroceder décadas en el tiempo y pre-calentar las medias móviles
+        de 200 periodos diarias y semanales sin consumir las velas operativas intradiarias.
+        """
+        url = f"https://api.tiingo.com/tiingo/daily/{ticker.lower()}/prices"
+        params = {
+            "startDate": start_date,
+            "endDate": end_date,
+        }
+        
+        logger.info(
+            "Petición a Tiingo EOD (Daily) | ticker=%s | %s → %s",
+            ticker, start_date, end_date
+        )
+        
+        try:
+            response = requests.get(url, headers=self.headers, params=params, timeout=30)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error("Error descargando EOD de '%s': %s", ticker, e)
+            return pd.DataFrame()
+            
+        raw_data = response.json()
+        if not raw_data:
+            return pd.DataFrame()
+            
+        return self._parse_response(raw_data, ticker)
+
     def download_all_tickers(self, delay_seconds: float = 0.5) -> dict:
         """
         Descarga el histórico de TODOS los activos definidos en settings.yaml.
