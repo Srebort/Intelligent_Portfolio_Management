@@ -58,9 +58,16 @@ def calculate_bill_williams_fractals(
         que ocurrió en t-2. La señal booleana (1 o 0) se marca en t, que es
         el momento exacto en el que el mercado (y el modelo) confirma el patrón.
 
+    Filtro Macro (Criba de Fractales):
+        Para evitar que fractales menores (ruido de 4H) sobreescriban los
+        fractales estructurales mayores (de 1D o 1W), se aplica un filtro
+        'macro_period'. Un fractal solo se valida si es el máximo/mínimo
+        absoluto de las últimas N velas. Esto consolida los niveles.
+
     Args:
         df       (pd.DataFrame): DataFrame con precios.
         period   (int): Distancia a cada lado del centro. Por defecto 2.
+        macro_period (int): Ventana de consolidación de fractales. Defecto 30 (~1 semana en 4H).
         high_col (str): Nombre de la columna de máximos.
         low_col  (str): Nombre de la columna de mínimos.
 
@@ -96,12 +103,28 @@ def calculate_bill_williams_fractals(
         
     cond_soporte &= (df[low_col].shift(period) < df[low_col])
 
+    # Aplicar la criba macro (agrupación de fractales importantes)
+    # Un fractal solo es válido si el centro es el min/max de las últimas 'macro_period' velas.
+    # El centro está en t - period, así que comparamos contra una ventana retrospectiva.
+    macro_period = 30  # Aprox 1 semana en velas de 4H (6 velas/día * 5 días)
+    
+    # Precomputar max/min móvil (shifted para no incluir el futuro, alineado al centro)
+    # Queremos el máximo de las 'macro_period' velas anteriores al centro.
+    rolling_max = df[high_col].shift(period).rolling(window=macro_period, min_periods=1).max()
+    rolling_min = df[low_col].shift(period).rolling(window=macro_period, min_periods=1).min()
+    
+    cond_resistencia_macro = (df[high_col].shift(period) >= rolling_max)
+    cond_soporte_macro = (df[low_col].shift(period) <= rolling_min)
+    
+    cond_resistencia &= cond_resistencia_macro
+    cond_soporte &= cond_soporte_macro
+
     # Rellenar los valores (1 o 0) usando np.where (vectorizado)
     resultado["is_resistance_fractal"] = np.where(cond_resistencia, 1, 0)
     resultado["is_support_fractal"]    = np.where(cond_soporte, 1, 0)
 
     logger.debug(
-        "Fractales calculados. Soportes: %d, Resistencias: %d",
+        "Fractales estructurales calculados. Soportes: %d, Resistencias: %d",
         resultado["is_support_fractal"].sum(),
         resultado["is_resistance_fractal"].sum()
     )

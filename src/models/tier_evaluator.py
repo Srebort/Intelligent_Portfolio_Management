@@ -177,28 +177,61 @@ class TierEvaluator:
         if "is_resistance_fractal" in df_out.columns and "high" in df_out.columns:
             # Nivel del último máximo fractal conocido (propagado con ffill)
             last_resistance = df_out["high"].where(df_out["is_resistance_fractal"] == 1).ffill()
+            
             # Breakout confirmado: cierre actual > resistencia y cierre anterior <= resistencia
-            is_breakout = (
-                (df_out["close"] > last_resistance) &
-                (df_out["close"].shift(1) <= last_resistance.shift(1))
-            )
+            cross_up = (df_out["close"] > last_resistance) & (df_out["close"].shift(1) <= last_resistance.shift(1))
+            
+            # Filtro de Vela Escapada en Ruptura: No perseguir el precio si cerró muy por encima de la resistencia
+            atr = df_out.get("ATR_14", pd.Series([10.0] * len(df_out), index=df_out.index))
+            not_escaped_breakout = (df_out["close"] - last_resistance) <= (1.5 * atr)
+            
+            # Filtro de Resistencia Madura (Edad del Fractal):
+            # Calculamos la edad del fractal (velas desde que se formó).
+            bars = pd.Series(np.arange(len(df_out)), index=df_out.index)
+            last_res_bar = bars.where(df_out["is_resistance_fractal"] == 1).ffill()
+            fractal_age = bars - last_res_bar
+            # Exigimos que la resistencia tenga al menos 15 velas de antigüedad (~2.5 días en 4H)
+            mature_resistance = fractal_age >= 15
+            
+            is_breakout = cross_up & not_escaped_breakout & mature_resistance
         else:
             is_breakout = pd.Series([False] * len(df_out), index=df_out.index)
+
+        # -----------------------------------------------------------------
+        # MEJORAS DE ENTRADA (Filtros de Excepciones SMA)
+        # -----------------------------------------------------------------
+        
+        # Filtro de Vela Escapada (Runaway Candle)
+        # Aseguramos que no entramos si el precio ya se ha escapado muy lejos del soporte de la SMA.
+        # Máxima distancia permitida: 1.5 * ATR (si cierra más lejos, se descarta el Tier).
+        atr = df_out.get("ATR_14", pd.Series([10.0] * len(df_out), index=df_out.index))
+        sma_200 = df_out.get("SMA_200", pd.Series([0.0] * len(df_out), index=df_out.index))
+        not_escaped = (df_out["close"] - sma_200) <= (1.5 * atr)
+
+        # Filtro Pullback Válido (De arriba hacia abajo)
+        # Contamos cuántas de las últimas 20 velas cerraron por debajo de la SMA.
+        # Si son <= 3, significa que el precio venía sólidamente navegando por encima
+        # y este toque es un retroceso válido, no un cruce de tendencia bajista a alcista.
+        is_below_sma = df_out["close"] < sma_200
+        candles_below = is_below_sma.rolling(window=20, min_periods=1).sum()
+        valid_pullback = candles_below <= 3
 
         # -----------------------------------------------------------------
         # LÓGICA DE TIERS (Asignación por prioridad descendente)
         # -----------------------------------------------------------------
 
-        # Tier A*: Mayor exigencia — requiere TODOS los filtros simultáneos
-        cond_A_star = filtro_base & wick_reclaim & near_fib_618 & bullish_div & near_sma
+        # Tier A*: Mayor exigencia — requiere convergencia de Fib, SMA y Divergencia RSI
+        # (Nuevas reglas: debe ser un pullback válido y no estar sobre-extendido)
+        cond_A_star = filtro_base & near_fib_618 & bullish_div & near_sma & valid_pullback & not_escaped
 
         # Tier A: Alta probabilidad — retroceso profundo sin exigir divergencia
-        cond_A = filtro_base & near_fib_618 & near_sma & ~cond_A_star
+        cond_A = filtro_base & near_fib_618 & near_sma & valid_pullback & not_escaped & ~cond_A_star
 
-        # Tier B: Media probabilidad — doble suelo con rechazo en soporte
-        cond_B = filtro_base & is_support & wick_reclaim & near_sma & ~cond_A_star & ~cond_A
+        # Tier B: Media probabilidad — doble suelo en zona de soporte
+        # (Modificado: Se acepta cualquier Suelo Estructural Macro durante la tendencia alcista)
+        cond_B = filtro_base & is_support & ~cond_A_star & ~cond_A
 
-        # Tier C: Baja probabilidad — confirmación tardía vía breakout
+        # Tier C: Breakout puro (No exige pullback de SMA porque opera rupturas al alza)
         cond_C = filtro_base & is_breakout & ~cond_A_star & ~cond_A & ~cond_B
 
         # Asignar Tier (de menor a mayor prioridad para que los mejores sobreescriban)
