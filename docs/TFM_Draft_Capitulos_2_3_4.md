@@ -1,0 +1,556 @@
+# BORRADOR DE REDACCIÓN — TFM: Intelligent Portfolio Management
+# Capítulos: Estado del Arte, Análisis del Problema, Arquitectura e Ingeniería de Características
+# Autor: Sergio Rebollo Puerto | MUIINF — Universitat Politècnica de València
+# Fecha: Junio 2026
+#
+# INSTRUCCIONES: Copiar cada sección en la plantilla Word (plantillaTFM_MUIINF.docx)
+# respetando los estilos de título definidos en la plantilla.
+# ==================================================================================
+
+
+# ===========================================================================
+# CAPÍTULO 2: ESTADO DEL ARTE
+# ===========================================================================
+
+## 2.1 Trading Algorítmico y Sistemas de Gestión Cuantitativa de Carteras
+
+El trading algorítmico, definido como la ejecución automatizada de órdenes de compraventa
+mediante reglas computacionales predeterminadas, ha experimentado un crecimiento exponencial
+desde la década de los noventa. Según datos de la U.S. Securities and Exchange Commission (SEC),
+los algoritmos generan actualmente más del 70% del volumen negociado en las principales bolsas
+americanas [cita]. Esta automatización, históricamente reservada a fondos de inversión
+institucionales con acceso a infraestructuras tecnológicas de alto coste, ha comenzado a
+democratizarse gracias a la proliferación de APIs de datos de mercado y librerías de machine
+learning de código abierto.
+
+En el ámbito académico, el trabajo fundacional de Markowitz (1952) sobre la Teoría Moderna
+de Carteras estableció los principios matemáticos de la diversificación óptima. Posteriormente,
+Fama y French (1993) demostraron que los mercados financieros no son perfectamente eficientes
+y que determinados factores sistemáticos (valor, tamaño, momentum) permiten obtener rentabilidades
+ajustadas al riesgo superiores al mercado. Este hallazgo abrió la puerta al desarrollo de
+estrategias de inversión basadas en reglas cuantitativas.
+
+Los sistemas modernos de gestión algorítmica de carteras pueden clasificarse en dos grandes
+familias: (i) los sistemas basados exclusivamente en reglas de análisis técnico, donde las
+señales de compraventa se generan mediante la combinación de indicadores clásicos como medias
+móviles, osciladores de momentum y patrones de velas; y (ii) los sistemas híbridos o de
+aprendizaje automático, donde un modelo estadístico aprende a identificar patrones rentables
+a partir de datos históricos etiquetados.
+
+El presente TFM se sitúa en esta segunda familia, combinando un sistema de reglas expertas
+estructuradas jerárquicamente (los Tiers de probabilidad) con un clasificador de Machine
+Learning (XGBoost) entrenado sobre los resultados reales del backtester.
+
+
+## 2.2 Análisis Multi-Timeframe (MTF): Justificación y Ventajas
+
+El Análisis Multi-Timeframe (MTF) es una metodología ampliamente utilizada por traders
+institucionales que consiste en tomar decisiones de trading en una temporalidad operativa
+(corto plazo) únicamente cuando la tendencia en temporalidades superiores (largo plazo) es
+favorable a la dirección de la operación. Elder (1993), en su obra seminal "Trading for a
+Living", formalizó esta idea bajo la denominación "Sistema de la Triple Pantalla", donde
+se utilizan tres temporalidades con relación aproximada 1:5 entre sí.
+
+La justificación matemática del MTF descansa en la teoría de ondas de mercado: los precios
+se mueven en tendencias anidadas de distintos órdenes de magnitud. Una vela de 4 horas alcista
+no es contradictoria con una tendencia semanal bajista; sin embargo, operar a favor de la
+tendencia de mayor orden estadísticamente aumenta la tasa de acierto y mejora el ratio
+riesgo-beneficio de las operaciones [cita].
+
+Trabajos como el de Appel (2005) y Murphy (1999) documentaron empíricamente que la
+confirmación de la tendencia en temporalidades superiores antes de ejecutar una entrada en
+la temporalidad operativa reduce la frecuencia de señales falsas en un 30-40% respecto a
+sistemas que operan en una única temporalidad. Esta reducción de señales falsas es
+especialmente relevante en estrategias Long-Only como la desarrollada en este trabajo, donde
+cada señal incorrecta implica un coste de oportunidad y un capital inmovilizado.
+
+### 2.2.1 El Problema del Lookahead Bias en Sistemas MTF
+
+La principal amenaza en la implementación de un sistema MTF es el denominado lookahead bias
+o fuga de información temporal. Este sesgo ocurre cuando el modelo de aprendizaje o el
+sistema de señales utiliza, implícitamente, información del futuro para generar señales en el
+pasado, produciendo resultados de backtesting artificialmente optimistas que no se replicarán
+en trading real.
+
+En el contexto de los sistemas MTF, el lookahead bias aparece frecuentemente cuando se
+propagan valores de temporalidades superiores (ej. el cierre diario del lunes 10 de enero)
+a todas las velas de 4H del mismo día, incluidas las anteriores al cierre de mercado. Este
+error implica que una vela de 4H de las 8:00h "conoce" el cierre de mercado de las 16:00h.
+
+El sistema desarrollado en este TFM resuelve este problema mediante el uso de
+`pandas.merge_asof` con `direction='backward'`: la propagación de valores de temporalidades
+superiores a las velas de 4H utiliza exclusivamente el último valor disponible en el momento
+de cada vela, nunca valores futuros. Esta garantía se verifica automáticamente en cada
+ejecución del pipeline, registrando en el log del sistema el rango temporal de los datos
+propagados.
+
+Tabla 2.1: Comparativa entre sistemas de análisis de mercado
+| Característica | Sistema Mono-Timeframe | Sistema MTF (este TFM) |
+|---|---|---|
+| Señales falsas | Alta frecuencia | Reducidas por filtro multi-nivel |
+| Lookahead bias | Riesgo moderado | Eliminado mediante merge_asof backward |
+| Complejidad | Baja | Media-Alta |
+| Adaptación al contexto macro | No | Sí (filtro 1D y 1W) |
+| Robustez a cambios de régimen | Baja | Alta (tendencia macro como permiso) |
+
+
+## 2.3 Machine Learning en la Predicción de Señales de Trading
+
+La aplicación de técnicas de aprendizaje automático a la predicción de movimientos bursátiles
+cuenta con una extensa literatura. Los primeros trabajos, como los de Kimoto et al. (1990)
+y Refenes et al. (1994), utilizaron redes neuronales feed-forward para predecir el índice
+Nikkei y el S&P 500, respectivamente, con resultados prometedores pero difícilmente
+replicables por el problema del sobreajuste (overfitting).
+
+El advenimiento de los métodos de ensamblado (ensemble methods) supuso un avance significativo
+en la robustez de los modelos de predicción financiera. En particular:
+
+- **Random Forest** (Breiman, 2001): Genera múltiples árboles de decisión sobre submuestras
+  aleatorias del dataset (técnica de bagging) y promedia sus predicciones, reduciendo la
+  varianza sin incrementar el sesgo. Su robustez a variables irrelevantes y su capacidad
+  para manejar interacciones no lineales lo convierten en una línea base sólida para problemas
+  de clasificación financiera.
+
+- **XGBoost** (Chen y Guestrin, 2016): Implementación optimizada del Gradient Boosting que
+  construye árboles de forma secuencial, donde cada árbol corrige los errores del anterior
+  (técnica de boosting). Ha demostrado resultados estado del arte en múltiples competencias
+  de predicción financiera (Kaggle) y en estudios académicos sobre clasificación de señales
+  de mercado [cita].
+
+La recomendación específica del tribunal de incluir una comparativa entre Regresión Logística,
+Random Forest y XGBoost responde a la necesidad académica de validar que la complejidad
+adicional del modelo boosted aporta mejoras estadísticamente significativas sobre el baseline
+estadístico clásico.
+
+
+## 2.4 Crítica al Estado del Arte y Contribución Original
+
+La mayor parte de los trabajos de Machine Learning aplicado a trading presentan una limitación
+metodológica fundamental: entrenan los modelos directamente sobre los cambios de precio
+(clasificando si el precio sube o baja), sin incorporar información sobre la calidad del
+setup de entrada. Este enfoque ignora el contexto técnico en el que se produce cada movimiento,
+generando datasets desbalanceados y con baja señal-ruido.
+
+El sistema propuesto en este TFM adopta un enfoque radicalmente distinto: el clasificador
+XGBoost no predice si el precio subirá genéricamente, sino si una señal técnica específica
+(ya filtrada por el sistema de Tiers) resultará rentable dadas las condiciones de gestión de
+riesgo definidas (Stop Loss y Take Profit). Esta formulación, denominada "confirmación de
+señal" en la literatura especializada [cita], presenta varias ventajas:
+
+1. El dataset de entrenamiento es balanceado naturalmente (las señales ganadoras y perdedoras
+   tienen frecuencias comparables).
+2. Las features (variables de entrada) están directamente relacionadas con la calidad del
+   setup, no con el ruido genérico del mercado.
+3. El backtester actúa como generador de etiquetas matemáticamente rigurosas, basadas en
+   resultados reales de precio y no en predicciones subjetivas.
+
+
+# ===========================================================================
+# CAPÍTULO 3: ANÁLISIS DEL PROBLEMA Y DATOS
+# ===========================================================================
+
+## 3.1 Definición del Problema
+
+La gestión cuantitativa de carteras de renta variable enfrenta tres desafíos fundamentales
+que este TFM aborda de forma integrada:
+
+**Desafío 1 — Selección de señales de calidad:** Los mercados financieros generan
+continuamente patrones técnicos, pero la mayoría de ellos son ruido aleatorio sin valor
+predictivo. Se necesita un sistema de filtrado capaz de distinguir las oportunidades de alta
+probabilidad del ruido.
+
+**Desafío 2 — Gestión dinámica del riesgo:** Asignar el mismo capital a todas las operaciones,
+independientemente de su calidad, es subóptimo. Se requiere un mecanismo de dimensionamiento
+de posición proporcional a la confianza en la señal.
+
+**Desafío 3 — Control de exposición global:** En una cartera con múltiples activos simultáneos,
+la correlación entre posiciones puede concentrar el riesgo de forma inadvertida. Es necesario
+un gestor de cartera que limite la exposición total y priorice las mejores oportunidades.
+
+
+## 3.2 Universo de Activos
+
+El universo de inversión del sistema comprende más de 50 activos de renta variable estadounidense,
+organizados en los siguientes sectores:
+
+Tabla 3.1: Universo de activos del sistema
+| Sector | Activos representativos |
+|---|---|
+| Índices y ETFs de referencia | SPY, QQQ, DIA, IWM |
+| Tecnología y Semiconductores | AAPL, MSFT, NVDA, GOOGL, META, AMD |
+| Ciberseguridad y Nube | CRWD, PANW, SNOW, PLTR |
+| Servicios Financieros | JPM, V, GS |
+| Salud y Biotecnología | LLY, NVO, ABBV |
+| Energía e Industria | XOM, CVX, CAT |
+| Activos de cobertura | TLT, GLD, SLV |
+
+La selección de renta variable americana como universo principal responde a tres criterios:
+(i) alta liquidez, que garantiza la ejecutabilidad de las órdenes sin impacto de mercado
+significativo; (ii) disponibilidad de datos históricos de calidad desde 2010; y (iii)
+eficiencia del mercado norteamericano, que facilita la comparación con el benchmark de Buy
+and Hold sobre el S&P 500.
+
+
+## 3.3 Fuentes de Datos
+
+### 3.3.1 Datos de Precio Intradiario: Tiingo IEX
+
+Los datos de precio OHLCV (Open, High, Low, Close, Volume) se obtienen del endpoint IEX de
+la API de Tiingo (https://api.tiingo.com), que proporciona series históricas con granularidad
+desde 1 minuto hasta 1 semana.
+
+Para este TFM se descargan tres resoluciones temporales:
+- **4 Horas (4H):** Temporalidad operativa principal, desde 2018 hasta 2026.
+- **1 Día (1D):** Temporalidad de tendencia de medio plazo, desde 2018 hasta 2026.
+- **1 Semana (1W):** Temporalidad de tendencia macro, desde 2018 hasta 2026.
+
+El módulo `tiingo_loader.py` implementa la clase `TiingoLoader`, que gestiona la autenticación
+mediante clave API almacenada en un fichero `.env` (nunca expuesta en el repositorio), aplica
+un control de tasa de solicitudes (rate limiting) para respetar los límites de la API, y
+exporta los datos descargados a ficheros CSV en `data/raw/` para eliminar la dependencia
+de internet en ejecuciones posteriores.
+
+### 3.3.2 El Problema del Precalentamiento de la Media Móvil de 200 Períodos
+
+La Media Móvil Simple (SMA) de 200 períodos semanales (SMA_200_1W) es el indicador de
+tendencia macro más empleado por inversores institucionales. Sin embargo, su cálculo correcto
+requiere exactamente 200 velas semanales previas (200 semanas ≈ 4 años) antes de producir
+un valor válido.
+
+Si el histórico disponible comenzara en enero de 2018, las primeras 200 semanas (hasta
+aproximadamente diciembre de 2021) generarían valores NaN en la SMA_200_1W, invalidando el
+filtro de tendencia macro del sistema y descartando todas las señales de ese período.
+
+Para resolver este problema, el módulo `tiingo_loader.py` incorpora la función
+`download_daily_historical_ticker`, que descarga datos End-of-Day (EOD) desde el 1 de enero
+de 2010 para todos los activos del universo. Estos datos de "precalentamiento" no se utilizan
+directamente en el entrenamiento del modelo (cuyo período comienza en 2018), sino
+exclusivamente para garantizar que la SMA_200_1W esté completamente calculada cuando se
+inicia el período de operación.
+
+La figura 3.1 ilustra este efecto: con datos desde 2010, la SMA_200_1W está disponible desde
+enero de 2014, cubriendo con holgura el período operativo desde 2018.
+
+### 3.3.3 Datos Macroeconómicos: FRED
+
+El sistema incorpora variables macroeconómicas procedentes del Federal Reserve Economic Data
+(FRED), base de datos pública mantenida por el Banco de la Reserva Federal de St. Louis.
+Las series descargadas son:
+
+Tabla 3.2: Variables macroeconómicas del sistema
+| Serie FRED | Variable | Frecuencia | Interpretación |
+|---|---|---|---|
+| FEDFUNDS | Tipo de interés Fed | Mensual | Coste del dinero (hawkish vs dovish) |
+| CPIAUCSL | Índice de Precios al Consumo | Mensual | Presión inflacionaria |
+| UNRATE | Tasa de desempleo | Mensual | Salud del mercado laboral |
+| T10Y2Y | Spread bonos 10Y-2Y | Diaria | Indicador adelantado de recesión |
+| VIXCLS | VIX (volatility index) | Diaria | Índice del miedo del mercado |
+
+El módulo `fred_loader.py` descarga estas series mediante la API pública de FRED y las
+une al dataset principal mediante un merge temporal con relleno hacia adelante (forward fill),
+asegurando que cada vela de 4H lleve consigo el último valor conocido de cada variable
+macroeconómica sin filtración de información futura.
+
+
+## 3.4 Pipeline de Ingesta y Transformación de Datos (ETL)
+
+El pipeline de datos sigue una arquitectura modular de tres etapas: Extracción (E),
+Transformación (T) y Carga (L), implementada mediante los siguientes módulos:
+
+```
+EXTRACCIÓN          TRANSFORMACIÓN              CARGA
+tiingo_loader.py → mtf_builder.py → dataset_cleaner.py → V_ML_READY.csv
+fred_loader.py  ↗
+```
+
+### 3.4.1 Construcción del Dataset Multi-Timeframe: `mtf_builder.py`
+
+El módulo `MTFBuilder` es el núcleo de la transformación de datos. Su función es unificar
+las tres temporalidades en un único DataFrame de velas de 4H, preservando la integridad
+temporal mediante la técnica de merge asof.
+
+El proceso de construcción sigue los siguientes pasos:
+
+1. **Carga de datos:** Se leen los CSVs de 4H, 1D y 1W previamente descargados por
+   `tiingo_loader.py`, convirtiendo el índice temporal a formato UTC para garantizar la
+   coherencia entre temporalidades.
+
+2. **Cálculo de indicadores por temporalidad:** Sobre cada DataFrame se calculan los
+   indicadores técnicos correspondientes mediante `add_all_features()` (módulo `technical.py`).
+   Los indicadores de 1D y 1W reciben el sufijo `_1D` y `_1W` respectivamente para
+   distinguirlos de sus equivalentes en 4H.
+
+3. **Propagación hacia adelante sin lookahead bias:** La fusión de temporalidades se realiza
+   mediante `pd.merge_asof(direction='backward')`, que para cada vela de 4H busca el último
+   valor disponible en 1D y 1W cuyo timestamp sea estrictamente anterior o igual al de la
+   vela de 4H. Esto garantiza que, por ejemplo, una vela de las 08:00h del lunes solo tiene
+   acceso al cierre del viernes anterior en la temporalidad diaria, no al cierre del lunes.
+
+La salida del `MTFBuilder` es un DataFrame con 35+ columnas que representa la "fotografía
+completa" del mercado en cada vela de 4H, incluyendo el contexto de largo plazo.
+
+### 3.4.2 Limpieza y Normalización: `dataset_cleaner.py`
+
+El módulo `DatasetCleaner` aplica el pipeline de limpieza final antes de que los datos sean
+consumidos por el modelo de Machine Learning:
+
+1. **Eliminación de NaNs:** Las primeras velas del dataset contienen valores NaN en los
+   indicadores de ventanas largas (SMA_200, RSI_14 con precalentamiento insuficiente). Estas
+   filas se eliminan, preservando únicamente el período operativo desde 2018.
+
+2. **Neutralización de infinitos:** El cálculo de ratios y distancias porcentuales puede
+   producir valores infinitos en casos excepcionales (divisiones por precios nulos en activos
+   sin liquidez). Estos valores se reemplazan por el máximo finito de la columna para evitar
+   errores de entrenamiento sin eliminar la fila completa.
+
+3. **Normalización selectiva con StandardScaler:** Se aplica normalización Z-score
+   (media = 0, desviación típica = 1) exclusivamente sobre los indicadores técnicos continuos
+   (RSI, ATR, distancias, pendientes). Los precios OHLCV originales y las variables binarias
+   (fractales, patrones de velas) quedan sin normalizar, ya que su significado semántico no
+   debe alterarse. La fórmula de normalización es:
+
+   z = (x - μ) / σ
+
+   donde μ es la media del indicador en el período de entrenamiento y σ su desviación típica.
+
+El dataset resultante, exportado como `data/processed/V_ML_READY.csv`, contiene 47 columnas
+de características listas para entrenar el clasificador.
+
+
+# ===========================================================================
+# CAPÍTULO 4: ARQUITECTURA DEL SISTEMA E INGENIERÍA DE CARACTERÍSTICAS
+# ===========================================================================
+
+## 4.1 Visión General de la Arquitectura
+
+El sistema desarrollado sigue una arquitectura en capas, donde cada capa añade un nivel de
+abstracción sobre los datos crudos hasta llegar a la decisión de inversión:
+
+```
+Capa 1 — Datos Brutos:     OHLCV 4H/1D/1W + Variables Macro (FRED)
+Capa 2 — Features:         Indicadores técnicos + Price Action + MTF
+Capa 3 — Señales:          Sistema de Tiers (A*, A, B, C) — TierEvaluator
+Capa 4 — Filtro ML:        Clasificador XGBoost — confirmación de señal
+Capa 5 — Gestión de riesgo: Stop Loss, Take Profit, Position Sizing — RiskManager
+Capa 6 — Cartera:          Ranking, liquidez, exposición máxima — PortfolioAgent
+```
+
+## 4.2 Indicadores Técnicos: `technical.py`
+
+El módulo `technical.py` implementa de forma completamente vectorizada (sin bucles for)
+todos los indicadores técnicos utilizados como características de entrada del modelo de
+Machine Learning. La vectorización mediante operaciones de Pandas y NumPy garantiza la
+escalabilidad a millones de velas sin degradación del rendimiento.
+
+Todos los indicadores cumplen la garantía anti-lookahead bias: utilizan exclusivamente
+operaciones retrospectivas (rolling backward-looking), es decir, cada valor del indicador
+se calcula usando únicamente la información disponible hasta el instante de esa vela.
+
+### 4.2.1 RSI — Relative Strength Index
+
+El RSI, desarrollado por J. Welles Wilder (1978), mide la velocidad y magnitud de los
+movimientos de precio recientes, oscilando entre 0 y 100.
+
+Fórmula:
+  Δ_t       = close_t - close_{t-1}
+  Gain_t    = max(Δ_t, 0)
+  Loss_t    = max(-Δ_t, 0)
+  RS        = EWM(Gain, α=1/14) / EWM(Loss, α=1/14)
+  RSI       = 100 - 100 / (1 + RS)
+
+donde EWM denota la media exponencialmente ponderada con factor de suavizado α = 1/(periodo-1).
+
+Valores por encima de 70 indican sobrecompra (el activo puede revertir a la baja);
+valores por debajo de 30 indican sobreventa (posible oportunidad de compra). En el sistema,
+el RSI se calcula con período 14 en las temporalidades 4H y 1D.
+
+### 4.2.2 ATR y NATR — Average True Range
+
+El ATR, también propuesto por Wilder (1978), mide la volatilidad real del mercado incorporando
+los gaps entre sesiones (saltos de precio de un cierre al apertura del día siguiente):
+
+  True Range_t = max(
+    high_t - low_t,                  ← Rango intradía
+    |high_t - close_{t-1}|,          ← Gap alcista respecto al cierre anterior
+    |low_t  - close_{t-1}|           ← Gap bajista respecto al cierre anterior
+  )
+  ATR_t = EWM(True Range, período=14)
+
+El ATR tiene dos usos fundamentales en el sistema: (i) como feature para el clasificador ML,
+reflejando el régimen de volatilidad actual; y (ii) como parámetro del cálculo del Stop Loss,
+donde sirve de "colchón" para evitar que el ruido normal del mercado active la orden de salida.
+
+El NATR (Normalized ATR) es la versión porcentual del ATR, calculada como:
+  NATR = (ATR / close) × 100
+
+Esta normalización permite comparar la volatilidad entre activos de distintos rangos de precio.
+
+### 4.2.3 Medias Móviles: SMA y EMA
+
+El sistema calcula medias móviles simples (SMA) y exponenciales (EMA) en cinco ventanas
+estándar: 9, 21, 50, 100 y 200 períodos.
+
+  SMA_n = (1/n) × Σ(close_{t-i}, i=0 a n-1)
+
+  EMA_n = close_t × α + EMA_{n,t-1} × (1 - α),   α = 2/(n+1)
+
+Las distancias relativas al precio se calculan como:
+  dist_SMA_n = (close - SMA_n) / SMA_n × 100
+
+y las pendientes como:
+  slope_SMA_n = (SMA_n,t - SMA_n,t-5) / SMA_n,t-5 × 100
+
+La pendiente de la SMA_200_1W (pendiente semanal) es la feature más importante del filtro
+de tendencia macro: si es positiva, el mercado está en tendencia alcista de largo plazo.
+
+### 4.2.4 Compresión de Volatilidad: ATR Squeeze
+
+El ratio de compresión de volatilidad detecta períodos de baja volatilidad que históricamente
+preceden a movimientos bruscos de precio (breakouts):
+
+  atr_squeeze = ATR_14 / SMA(ATR_14, ventana=20)
+
+Valores inferiores a 1.0 indican que la volatilidad actual está por debajo de su media de
+los últimos 20 períodos (compresión). En el contexto del sistema, señales generadas durante
+períodos de compresión tienen mayor probabilidad de producir movimientos explosivos.
+
+### 4.2.5 Divergencias Alcistas del RSI
+
+La divergencia alcista es uno de los patrones de mayor fiabilidad en el análisis técnico.
+Se produce cuando el precio forma un mínimo más bajo (lower low) pero el RSI forma un mínimo
+más alto (higher low), indicando que el momentum bajista se está agotando.
+
+Algoritmo de detección (vectorizado):
+  1. Identificar mínimos locales de precio y de RSI en una ventana de 20 períodos
+  2. Comparar el mínimo actual de precio con el anterior: si price_low_t < price_low_{t-prev} → condición 1
+  3. Comparar el mínimo actual de RSI con el anterior: si rsi_low_t > rsi_low_{t-prev} → condición 2
+  4. is_bullish_divergence = condición_1 AND condición_2
+
+Esta feature es condición necesaria para el Tier A* (máxima probabilidad) del sistema.
+
+
+## 4.3 Price Action Algorítmico: `patterns.py`
+
+El módulo `patterns.py` traduce conceptos visuales del análisis de Price Action en
+características matemáticas binarias (1/0) que el modelo de ML puede procesar.
+
+### 4.3.1 Fractales de Bill Williams
+
+Los fractales de Bill Williams identifican mínimos locales (soporte algorítmico) y máximos
+locales (resistencia algorítmica) de forma objetiva:
+
+- **Fractal de soporte (Down Fractal):** Una vela cuyo mínimo es estrictamente inferior al
+  mínimo de las 2 velas anteriores y las 2 velas posteriores.
+  is_support_fractal_t ≡ (low_{t-2} > low_{t-2}, low_{t-1} > low_{t-2}, low_{t+1} > low_{t-2}, low_{t+2} > low_{t-2})
+
+- **Fractal de resistencia (Up Fractal):** Análogo para los máximos.
+
+Garantía anti-lookahead bias: dado que el fractal requiere las 2 velas POSTERIORES para su
+confirmación, la señal se emite en la vela t (la actual), no en t-2 (el centro del patrón).
+Esto modela fielmente lo que un trader vería en tiempo real: la confirmación solo llega cuando
+el mercado ha formado dos velas más bajas que el mínimo central.
+
+### 4.3.2 Patrones de Velas Japonesas
+
+**Martillo (Hammer):** Indica fuerte rechazo del precio hacia abajo. Condiciones:
+  - Mecha inferior ≥ 2 × cuerpo del cuerpo
+  - Mecha superior ≤ 10% del rango total
+
+**Martillo Invertido (Inverted Hammer):** Indica fuerte rechazo al alza:
+  - Mecha superior ≥ 2 × cuerpo
+  - Mecha inferior ≤ 10% del rango total
+
+Ambos patrones se calculan vectorizadamente sin ninguna condicional iterativa.
+
+### 4.3.3 Wick Reclaims (Barridos de Liquidez)
+
+El Bullish Wick Reclaim identifica velas que barrieron stops por debajo de un soporte
+y luego recuperaron ese nivel dentro de la misma vela, dejando una mecha inferior larga:
+
+  ratio_mecha_inferior = mecha_inferior / rango_total
+  is_bullish_wick_reclaim = (ratio_mecha_inferior ≥ 0.60)
+
+Este patrón es fundamental en el Tier A* (junto con la divergencia RSI), ya que representa
+un barrido de liquidez seguido de absorción institucional.
+
+### 4.3.4 Niveles de Fibonacci en Ventana Deslizante
+
+Los niveles de Fibonacci se calculan sobre una ventana deslizante de 50 períodos,
+identificando el máximo (H) y el mínimo (L) del período:
+
+  Rango = H - L
+  Fib_38.2% = H - 0.382 × Rango  (retroceso del 38.2%)
+  Fib_61.8% = H - 0.618 × Rango  (retroceso del 61.8%)
+
+El uso de una ventana deslizante en lugar de niveles fijos garantiza que los niveles de
+Fibonacci se actualicen con el movimiento del mercado, capturando la zona de valor relevante
+en cada momento sin filtración de información futura.
+
+Las features resultantes son las distancias relativas del precio actual a cada nivel:
+  dist_fib_retr_618 = (close - Fib_61.8%) / close × 100
+
+Un valor cercano a 0 indica que el precio está en ese nivel de Fibonacci, lo que es una
+condición de entrada en los Tiers A y A*.
+
+
+## 4.4 Sistema de Evaluación de Señales: TierEvaluator
+
+El `TierEvaluator` clasifica cada vela del dataset en uno de los cuatro Tiers de probabilidad
+(A*, A, B, C) o en la categoría nula (sin señal), aplicando un conjunto de condiciones lógicas
+en cascada de mayor a menor exigencia.
+
+### 4.4.1 Filtro Base Multi-Timeframe (Obligatorio para todos los Tiers)
+
+Antes de evaluar cualquier patrón de Price Action, el sistema verifica la confluencia de las
+tres temporalidades:
+
+  Condición_4H:  close_4H > SMA_200_4H              (tendencia operativa alcista)
+  Condición_1D:  close_1D > SMA_200_1D              (tendencia diaria alcista)
+  Condición_1W:  slope_SMA_200_1W > 0               (tendencia macro positiva)
+  filtro_base   = Condición_4H AND Condición_1D AND Condición_1W
+
+Si el filtro base falla, la señal NO se genera. Esta es la primera línea de defensa del
+sistema contra operar en contra de la tendencia institucional.
+
+### 4.4.2 Tier A* — Probabilidad Extrema
+
+Representa el setup de máxima confluencia: barrido de liquidez + retroceso Fibonacci + divergencia RSI.
+
+  Tier_A_star = filtro_base
+                AND is_bullish_wick_reclaim = 1
+                AND |dist_fib_retr_618| < 1.5%
+                AND |dist_SMA_200| < 5%
+                AND is_bullish_divergence = 1
+
+### 4.4.3 Tier A — Probabilidad Alta
+
+Retroceso profundo sin barrido de liquidez explícito:
+  Tier_A = filtro_base AND |dist_fib_retr_618| < 1.5% AND |dist_SMA_200| < 5% AND NOT Tier_A_star
+
+### 4.4.4 Tier B — Probabilidad Media
+
+Doble suelo sobre soporte algorítmico:
+  Tier_B = filtro_base AND is_support_fractal = 1 AND is_bullish_wick_reclaim = 1
+           AND |dist_SMA_200| < 5% AND NOT Tier_A_star AND NOT Tier_A
+
+### 4.4.5 Tier C — Probabilidad Baja
+
+Confirmación tardía vía ruptura de resistencia:
+  Tier_C = filtro_base AND close > último_fractal_de_resistencia
+           AND close_{t-1} <= resistencia_{t-1} AND NOT Tier_A_star AND NOT Tier_A AND NOT Tier_B
+
+### 4.4.6 Asignación de Capital por Tier
+
+El capital en riesgo máximo se determina en función del Tier asignado:
+
+Tabla 4.1: Asignación de capital por Tier
+| Tier | Capital en riesgo | Justificación |
+|---|---|---|
+| A* | 2.0% del capital total | Máxima confluencia de señales independientes |
+| A  | 1.5% del capital total | Alta probabilidad sin confirmación de divergencia |
+| B  | 1.0% del capital total | Probabilidad media, doble suelo confirmado |
+| C  | 0.5% del capital total | Confirmación tardía, mayor riesgo de falsa ruptura |
+
+Esta asignación asimétrica implementa el principio de Kelly Criterion generalizado: se
+arriesga más capital cuando la probabilidad de éxito es mayor y menos cuando es menor,
+maximizando el crecimiento esperado del capital a largo plazo.

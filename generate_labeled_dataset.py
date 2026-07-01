@@ -121,6 +121,100 @@ def run(ticker: str = "V", data_dir: str = "data/processed"):
             wr = df_labeled[cols].mean().mean() * 100
             print(f"    {tp:<15} : {wr:.1f}%  ({len(cols)} SLs)")
 
+    # Win Rate Desglosado por Tier (usando SL4_SMA200 + TP4_Fib100)
+    print("\n  --- Win Rate por Tier (Label principal: SL4+TP4) ---")
+    if 'Tier' in df_labeled.columns:
+        tier_stats = df_labeled.groupby('Tier')['Label'].agg(['count', 'mean'])
+        for tier, row in tier_stats.iterrows():
+            print(f"    Tier {tier:<10} : {row['mean']*100:.1f}%  ({int(row['count'])} señales)")
+
+    print("\n  --- Ejemplos Detallados para Análisis Visual en Gráfico (Año >= 2025) ---")
+    if 'Tier' in df_labeled.columns:
+        # Añadir temporalmente columna de año
+        df_labeled['Year'] = df_labeled.index.year
+        
+        # Filtrar solo a partir de 2025 y agrupar por Año y Tier
+        df_recent = df_labeled[df_labeled['Year'] >= 2025]
+        grouped = df_recent.groupby(['Year', 'Tier'])
+        
+        for name, group in grouped:
+            year, tier = name
+            print(f"\n    [ Año {year} | Tier {tier} ]")
+            # Tomar 2 ejemplos aleatorios (o los primeros si hay menos)
+            samples = group.head(2)
+            for idx, row in samples.iterrows():
+                # Obtener qué nivel se tocó primero (Label = 1 si TP, 0 si SL)
+                is_win = row.get('Label', 0) == 1
+                sl_vela = row.get('SL4_SMA200_vela')
+                tp_vela = row.get('TP4_Fib100_vela')
+                
+                # Determinar vela de salida (la menor si ambas no son nulas)
+                if pd.notna(sl_vela) and pd.notna(tp_vela):
+                    exit_offset = int(min(sl_vela, tp_vela))
+                elif pd.notna(sl_vela):
+                    exit_offset = int(sl_vela)
+                elif pd.notna(tp_vela):
+                    exit_offset = int(tp_vela)
+                else:
+                    exit_offset = 0
+
+                # Calcular la fecha exacta de salida basándose en el índice original de precios
+                entry_pos = df.index.get_loc(idx)
+                exit_pos = entry_pos + exit_offset
+                if exit_pos < len(df):
+                    exit_date = df.index[exit_pos].strftime('%Y-%m-%d %H:%M')
+                else:
+                    exit_date = "No finalizó"
+
+                resultado = "GANADORA " if is_win else "PERDEDORA"
+                
+                # Obtener el precio de entrada (cierre de esa vela) y de salida
+                entry_price = df.loc[idx, 'close']
+                atr = df.loc[idx, 'ATR_14'] if 'ATR_14' in df.columns else 0
+                sma50 = df.loc[idx, 'SMA_50'] if 'SMA_50' in df.columns else 0
+                sma200 = df.loc[idx, 'SMA_200'] if 'SMA_200' in df.columns else 0
+                
+                # Buscar el precio del último fractal de soporte propagado hasta esta vela
+                if 'is_support_fractal' in df.columns:
+                    fractal_series = df['low'].where(df['is_support_fractal'] == 1).shift(1).ffill()
+                    fractal_val = fractal_series.loc[idx]
+                else:
+                    fractal_val = float('nan')
+
+                if is_win:
+                    salida_tipo = "TP (Fib100)"
+                    exit_price = row.get('TP4_Fib100_precio', 0)
+                else:
+                    salida_tipo = "SL (SMA200)"
+                    exit_price = row.get('SL4_SMA200_precio', 0)
+                
+                print(f"      -> ENTRADA: {idx.strftime('%Y-%m-%d %H:%M')} (Precio: ${entry_price:.2f})")
+                print(f"         [Valores Base de los Indicadores en la Vela de Entrada]")
+                print(f"           - ATR(14)      : ${atr:.2f}")
+                print(f"           - SMA(50)      : ${sma50:.2f}")
+                print(f"           - SMA(200)     : ${sma200:.2f}")
+                print(f"           - Suelo Fractal: ${fractal_val:.2f}")
+                print(f"         [Niveles Calculados de Stop Loss]")
+                print(f"           - SL1 (ATR)    : ${row.get('SL1_ATR_precio', 0):.2f}")
+                print(f"           - SL2 (Fractal): ${row.get('SL2_Fractal_precio', 0):.2f}")
+                print(f"           - SL3 (SMA50)  : ${row.get('SL3_SMA50_precio', 0):.2f}")
+                print(f"           - SL4 (SMA200) : ${row.get('SL4_SMA200_precio', 0):.2f}")
+                print(f"           - SL5 (Fib382) : ${row.get('SL5_Fib382_precio', 0):.2f}")
+                print(f"           - SL6 (Fib500) : ${row.get('SL6_Fib500_precio', 0):.2f}")
+                print(f"           - SL7 (Fib618) : ${row.get('SL7_Fib618_precio', 0):.2f}")
+                print(f"         [Niveles Calculados de Take Profit]")
+                print(f"           - TP1 (2R)     : ${row.get('TP1_2R_precio', 0):.2f}")
+                print(f"           - TP2 (2.5R)   : ${row.get('TP2_25R_precio', 0):.2f}")
+                print(f"           - TP3 (3R)     : ${row.get('TP3_3R_precio', 0):.2f}")
+                print(f"           - TP4 (Fib100) : ${row.get('TP4_Fib100_precio', 0):.2f}")
+                print(f"           - TP5 (Fib161) : ${row.get('TP5_Fib1618_precio', 0):.2f}")
+                print(f"           - TP6 (Fib261) : ${row.get('TP6_Fib2618_precio', 0):.2f}")
+                print(f"         SALIDA REALIZADA:  {exit_date} (Precio: ${exit_price:.2f}) | {resultado} por {salida_tipo}")
+                print("         " + "-"*60)
+                
+        # Limpiar la columna temporal
+        df_labeled.drop(columns=['Year'], inplace=True)
+
     print("="*60)
 
 
