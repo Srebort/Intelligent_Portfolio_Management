@@ -1,53 +1,132 @@
 """
-Module for the XGBoost asset selection filter.
+Módulo para el modelo predictivo avanzado utilizando XGBoost.
+Implementa un clasificador fuertemente regularizado para evitar el sobreajuste
+en conjuntos de datos financieros.
 """
 
-import pandas as pd
+import logging
+from typing import Dict, Any, Tuple
 import numpy as np
 import xgboost as xgb
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+logger = logging.getLogger("TradeSelectorXGB")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s — %(message)s")
 
 class TradeSelectorXGB:
-    """
-    Class implementing an XGBoost model to filter and select viable trades.
-    """
-    
-    def __init__(self, model_params: dict = None):
+    def __init__(self, **kwargs):
         """
-        Initializes the XGBoost model with given parameters.
+        Clasificador avanzado basado en XGBoost.
+        Configurado por defecto con fuerte regularización L1/L2 (alpha/lambda)
+        y profundidad máxima baja para evitar sobreajuste en datasets financieros pequeños.
+        """
+        # Hiperparámetros por defecto optimizados para evitar overfitting
+        default_params = {
+            'n_estimators': 100,         # Número de árboles moderado
+            'max_depth': 3,              # Árboles poco profundos
+            'learning_rate': 0.05,       # Aprendizaje lento
+            'subsample': 0.8,            # Usa el 80% de las filas por árbol
+            'colsample_bytree': 0.8,     # Usa el 80% de las columnas por árbol
+            'reg_alpha': 0.5,            # Regularización L1 (Lasso) - reduce pesos a 0
+            'reg_lambda': 1.0,           # Regularización L2 (Ridge) - penaliza pesos grandes
+            'scale_pos_weight': 1.0,     # Ajustar si hay desbalanceo severo
+            'random_state': 42,
+            'eval_metric': 'logloss'
+        }
         
-        Args:
-            model_params (dict): Hyperparameters for the XGBoost classifier/regressor.
-        """
-        self.params = model_params if model_params else {}
-        self.model = None # xgb.XGBClassifier(**self.params) or XGBRegressor
-
-    def train_model(self, X_train: pd.DataFrame, y_train: pd.Series):
-        """
-        Trains the XGBoost model.
+        # Sobrescribir con los kwargs proporcionados
+        self.params = {**default_params, **kwargs}
+        self.model = xgb.XGBClassifier(**self.params)
         
-        Args:
-            X_train (pd.DataFrame): Features for training.
-            y_train (pd.Series): Target variable for training.
+    def train(self, X_train: np.ndarray, y_train: np.ndarray, 
+              X_val: np.ndarray = None, y_val: np.ndarray = None):
         """
-        pass
-
-    def predict_prob(self, X_test: pd.DataFrame) -> np.ndarray:
+        Entrena el modelo XGBoost.
         """
-        Predicts probabilities or scores for new data.
+        logger.info(f"Entrenando TradeSelectorXGB (N_train={len(y_train)})...")
         
-        Args:
-            X_test (pd.DataFrame): Features for prediction.
+        eval_set = [(X_train, y_train)]
+        if X_val is not None and y_val is not None:
+            eval_set.append((X_val, y_val))
             
-        Returns:
-            np.ndarray: Predicted probabilities.
-        """
-        pass
-
-    def get_feature_importance(self) -> pd.DataFrame:
-        """
-        Evaluates and returns the importance of variables used in the model.
+        self.model.fit(
+            X_train, y_train,
+            eval_set=eval_set,
+            verbose=False
+        )
         
-        Returns:
-            pd.DataFrame: DataFrame containing feature names and their importance scores.
+    def predict(self, X_test: np.ndarray, threshold: float = 0.5) -> np.ndarray:
         """
-        pass
+        Predice la clase binaria usando un umbral personalizado.
+        """
+        probs = self.predict_proba(X_test)[:, 1]
+        return (probs >= threshold).astype(int)
+        
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        Devuelve las probabilidades [P(Loss), P(Win)]
+        """
+        return self.model.predict_proba(X_test)
+        
+    def evaluate(self, X_test: np.ndarray, y_test: np.ndarray, threshold: float = 0.5) -> Dict[str, Any]:
+        """
+        Evalúa el rendimiento del modelo con un umbral dado.
+        """
+        preds = self.predict(X_test, threshold)
+        
+        metrics = {
+            "accuracy": accuracy_score(y_test, preds),
+            "precision": precision_score(y_test, preds, zero_division=0),
+            "recall": recall_score(y_test, preds, zero_division=0),
+            "f1": f1_score(y_test, preds, zero_division=0),
+            "confusion_matrix": confusion_matrix(y_test, preds).tolist()
+        }
+        return metrics
+
+if __name__ == "__main__":
+    from src.models.ml_pipeline import MLPipeline
+    
+    print("=" * 60)
+    print("INICIANDO EVALUACIÓN DE TRADE SELECTOR XGBOOST")
+    print("=" * 60)
+    
+    pipeline = MLPipeline()
+    df = pipeline.load_data()
+    
+    if not df.empty:
+        pipeline.filter_leakage_columns()
+        pipeline.prepare_features_and_target()
+        
+        # Iterar sobre las particiones cronológicas
+        for fold, (X_train, X_test, y_train, y_test) in enumerate(pipeline.split_and_scale(n_splits=3)):
+            if fold == 2:  # Evaluar en el último fold
+                logger.info("--- EVALUANDO EN ÚLTIMO FOLD (Train Size: %d, Test Size: %d) ---", len(y_train), len(y_test))
+                
+                # Inicializar TradeSelectorXGB
+                xgb_model = TradeSelectorXGB()
+                
+                # Entrenar pasándole el test como validación
+                xgb_model.train(X_train, y_train, X_test, y_test)
+                
+                # Evaluar
+                metrics = xgb_model.evaluate(X_test, y_test)
+                
+                print(f"\n--- TradeSelectorXGB ---")
+                print(f"  -> Accuracy:  {metrics['accuracy']:.3f}")
+                print(f"  -> Precision: {metrics['precision']:.3f}")
+                print(f"  -> Recall:    {metrics['recall']:.3f}")
+                print(f"  -> F1 Score:  {metrics['f1']:.3f}")
+                
+                cm = metrics['confusion_matrix']
+                print(f"  -> Matriz de Confusión:")
+                print(f"       [TN: {cm[0][0]:2d} | FP: {cm[0][1]:2d}]  (0=Perdedoras)")
+                print(f"       [FN: {cm[1][0]:2d} | TP: {cm[1][1]:2d}]  (1=Ganadoras)")
+                
+                # Probabilidades de los primeros 5 ejemplos
+                probs = xgb_model.predict_proba(X_test[:5])
+                print("\n  -> Probabilidades (primeras 5 operaciones del futuro):")
+                for i, p in enumerate(probs):
+                    real_label = "Ganadora" if y_test.iloc[i] == 1 else "Perdedora"
+                    print(f"       Op {i+1}: Loss {p[0]*100:5.1f}% | Win {p[1]*100:5.1f}%  (Real: {real_label})")
+                    
+        print("\n" + "=" * 60)

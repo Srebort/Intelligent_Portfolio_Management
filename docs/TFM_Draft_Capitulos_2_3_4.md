@@ -9,6 +9,58 @@
 
 
 # ===========================================================================
+# CAPÍTULO 1: INTRODUCCIÓN
+# ===========================================================================
+
+Este capítulo presenta la visión global del Trabajo Fin de Máster (TFM), estableciendo los motivos que impulsan su desarrollo, los objetivos que se persiguen, la metodología de trabajo adoptada y el impacto esperado de la solución propuesta.
+
+## 1.1 Motivación
+
+En la última década, los mercados financieros han experimentado una transformación estructural hacia la automatización. Mientras que los inversores institucionales utilizan complejos modelos cuantitativos y algoritmos de alta frecuencia para gestionar su exposición al riesgo, el inversor particular sigue dependiendo mayoritariamente de decisiones discrecionales, sesgos emocionales y análisis técnico manual. 
+
+La motivación principal de este proyecto radica en la necesidad de cerrar esta brecha tecnológica. Se pretende demostrar que, mediante la integración de Análisis Multi-Timeframe (MTF) riguroso, algoritmos de detección de *Price Action* y modelos de Machine Learning (como XGBoost o Random Forest), es posible construir un sistema de gestión cuantitativa de carteras autónomo, robusto y estadísticamente rentable, accesible sin requerir la infraestructura de un fondo de inversión.
+
+A nivel personal y académico, este TFM representa la oportunidad de aplicar de manera práctica e integrada los conocimientos adquiridos durante el Máster Universitario en Ingeniería Informática (MUIINF), abarcando disciplinas complejas como la ingeniería de datos, el aprendizaje automático, el diseño de arquitecturas de software y la teoría financiera de gestión de riesgos.
+
+## 1.2 Objetivos
+
+El propósito fundamental de este trabajo es diseñar, implementar y validar un sistema algorítmico autónomo capaz de gestionar una cartera de renta variable estadounidense, maximizando el rendimiento ajustado al riesgo mediante el uso de inteligencia artificial.
+
+De este propósito se derivan los siguientes objetivos específicos:
+
+1.  **Desarrollar una infraestructura de datos robusta:** Construir un pipeline capaz de extraer, limpiar y fusionar datos de múltiples temporalidades (intradiario, diario y semanal) evitando la filtración de información futura (*lookahead bias*).
+2.  **Codificar reglas expertas de análisis técnico:** Traducir patrones visuales complejos (como fractales de Bill Williams, divergencias de RSI y *wick reclaims*) en un sistema algorítmico jerárquico de evaluación de señales (Tiers).
+3.  **Implementar un filtro predictivo de Machine Learning:** Entrenar modelos basados en árboles (Random Forest y XGBoost) para clasificar y descartar señales de baja probabilidad, optimizando la precisión de las entradas al mercado.
+4.  **Diseñar un simulador de gestión de riesgos:** Construir un módulo de gestión de cartera que implemente estrategias de dimensionamiento de posición (*position sizing*) basadas en riesgo fijo fraccional, controlando estrictamente la exposición máxima del capital.
+5.  **Evaluar empíricamente el rendimiento:** Realizar un *backtest* exhaustivo de la estrategia frente a un *benchmark* pasivo (como el índice S&P 500), utilizando métricas financieras estándar como el Ratio de Sharpe y el Maximum Drawdown.
+
+## 1.3 Impacto Esperado
+
+El resultado de este trabajo supondrá el desarrollo de un motor cuantitativo integral (*Intelligent Portfolio Management*) capaz de operar de manera autónoma. Los beneficiarios directos de esta tecnología podrían ser inversores particulares avanzados o pequeñas firmas de gestión de capital que busquen sistematizar su operativa para eliminar el estrés psicológico del trading manual.
+
+Desde una perspectiva académica, este TFM aporta un marco de validación estricto para modelos de Machine Learning aplicados a finanzas, demostrando cómo el etiquetado basado en reglas de *backtesting* estricto resuelve el problema clásico de los *datasets* financieros ruidosos y desbalanceados.
+
+## 1.4 Metodología
+
+El desarrollo del proyecto se ha regido por una adaptación de metodologías ágiles, estructurando el trabajo en *Sprints* iterativos e incrementales. Cada iteración ha estado orientada a entregar un componente funcional de la arquitectura:
+
+*   **Sprints de Datos e Ingeniería de Características:** Centrados en la conexión a APIs (Tiingo, FRED) y la extracción matemática de indicadores.
+*   **Sprints de Modelado y Etiquetado:** Dedicados a la construcción del *Backtester* y al entrenamiento de los modelos predictivos de Machine Learning.
+*   **Sprints de Simulación Financiera:** Enfocados en la lógica del Agente Gestor de Cartera y las reglas de riesgo (*Risk Management*).
+
+Para la implementación tecnológica se ha empleado Python como lenguaje base, utilizando librerías estándar de la industria de datos como `pandas`, `numpy`, `scikit-learn` y `xgboost`, garantizando así la mantenibilidad y escalabilidad del código.
+
+## 1.5 Estructura de la Memoria
+
+El presente documento se estructura de la siguiente manera:
+*   El **Capítulo 2** expone el Estado del Arte, revisando la literatura sobre trading algorítmico y Machine Learning, e identificando el espacio de innovación del trabajo.
+*   El **Capítulo 3** realiza el Análisis del Problema, definiendo el universo de activos, las fuentes de datos y las consideraciones legales y de seguridad.
+*   El **Capítulo 4** detalla la Solución Propuesta, abarcando desde la arquitectura del pipeline de datos y la codificación de patrones técnicos, hasta el diseño y evaluación del filtro predictivo de inteligencia artificial.
+*   El **Capítulo 5** presentará la Implantación y los Resultados, mostrando el rendimiento del sistema en simulaciones históricas (*backtesting*).
+*   El **Capítulo 6** recoge las Conclusiones finales, la relación del trabajo con los estudios cursados y propone futuras líneas de investigación.
+
+
+# ===========================================================================
 # CAPÍTULO 2: ESTADO DEL ARTE
 # ===========================================================================
 
@@ -554,3 +606,52 @@ Tabla 4.1: Asignación de capital por Tier
 Esta asignación asimétrica implementa el principio de Kelly Criterion generalizado: se
 arriesga más capital cuando la probabilidad de éxito es mayor y menos cuando es menor,
 maximizando el crecimiento esperado del capital a largo plazo.
+
+
+## 4.5 El Filtro Predictivo (Machine Learning)
+
+A pesar de la rigurosidad matemática del sistema de Tiers basado en *Price Action* descrito en la sección anterior, los mercados financieros presentan un alto grado de estocasticidad que produce, inevitablemente, un porcentaje significativo de señales falsas (operaciones perdedoras que tocan el Stop Loss). Para mitigar este problema, se ha integrado una capa adicional de inteligencia artificial: un filtro predictivo de Machine Learning.
+
+El objetivo de este modelo no es predecir genéricamente la dirección del mercado, sino actuar como un "segundo juez". Toma como entrada exclusivamente las operaciones que el `TierEvaluator` ya ha validado, analiza sus características técnicas (features) en el momento exacto de la señal, y predice la probabilidad matemática de que dicha operación alcance el Take Profit antes que el Stop Loss.
+
+### 4.5.1 Prevención de Data Leakage y Pipeline de Datos
+
+El desafío técnico más crítico en el modelado financiero predictivo es la prevención de la filtración de información futura (*data leakage*). Dado que el dataset fue etiquetado matemáticamente por el backtester utilizando precios futuros reales (hit de TP o SL), estas columnas revelan directamente el resultado de la operación.
+
+Para evitar esto, se ha implementado la clase `MLPipeline` (`src/models/ml_pipeline.py`), que realiza las siguientes operaciones de seguridad de forma automatizada:
+1.  **Purga de variables del futuro:** Elimina programáticamente 81 columnas del dataset, incluyendo cualquier variable terminada en `_precio`, `_vela` o `_hit`, conservando estrictamente los indicadores técnicos e índices de *Price Action* calculados hasta el momento de la entrada.
+2.  **Partición Cronológica (TimeSeriesSplit):** A diferencia de un problema de clasificación tradicional donde los datos pueden particionarse aleatoriamente (K-Fold tradicional), los datos financieros poseen dependencia temporal. El pipeline utiliza `TimeSeriesSplit` para evaluar los modelos: entrena con el pasado y testea en el futuro.
+3.  **Escalado:** Las variables numéricas son estandarizadas mediante `StandardScaler` (ajustado exclusivamente sobre los datos de entrenamiento) para garantizar un aprendizaje estable en algoritmos sensibles a la magnitud, como Support Vector Machines.
+
+### 4.5.2 Modelos Predictivos Base y Control del Sobreajuste
+
+Al trabajar con series temporales financieras y, especialmente en las fases iniciales del desarrollo con un dataset limitado, el riesgo de sobreajuste (*overfitting*) es severo. Si se permite que el modelo memorice el "ruido" del mercado, su capacidad de generalización en operaciones futuras reales se desploma.
+
+Por ello, se establecieron tres modelos base (líneas base o *baselines*) fuertemente regularizados:
+-   **Regresión Logística (LogReg):** Configurada con una regularización L2 agresiva (`C=0.05`). Actúa como el baseline lineal del sistema.
+-   **Support Vector Machine (SVM):** Utilizando un kernel Gaussiano (RBF) con un margen de regularización suave (`C=0.5`).
+-   **Random Forest (RF):** Ensamblaje de 50 árboles de decisión, severamente limitados en profundidad (`max_depth=3`) y con exigencia de al menos 3 muestras por hoja (`min_samples_leaf=3`) para forzar la abstracción.
+
+### 4.5.3 Clasificador Avanzado: XGBoost
+
+Como modelo final, se implementó `TradeSelectorXGB` basado en XGBoost (*eXtreme Gradient Boosting*). Este algoritmo construye árboles de decisión secuencialmente para minimizar los errores de sus predecesores. 
+
+Para su configuración financiera, se aplicó una regularización combinada: `reg_alpha=0.5` (Lasso) para forzar dispersión reduciendo a cero los pesos de características irrelevantes, y `reg_lambda=1.0` (Ridge) para penalizar ponderaciones excesivas. Adicionalmente, el ratio de aprendizaje se redujo a `learning_rate=0.05` y la profundidad máxima a 3, obligando al modelo a aprender patrones sutiles y robustos en lugar de particularidades del dataset.
+
+### 4.5.4 Evaluación de Modelos y Análisis de Variables (Feature Importance)
+
+Los cuatro modelos compitieron directamente sobre el conjunto de Test. Se priorizó el uso del **F1-Score** como métrica principal, dada su capacidad matemática para penalizar tanto los Falsos Positivos (señales aceptadas que resultan en pérdidas) como los Falsos Negativos (señales ganadoras descartadas).
+
+**Resultados Comparativos en el Test Set (Operaciones Futuras):**
+-   **Random Forest:** Logró el mejor desempeño global, con un F1-Score de **0.778**, un Accuracy del 87.9% y tan solo 3 Falsos Positivos.
+-   **SVM:** Obtuvo un F1-Score de **0.737** (Accuracy 84.8%).
+-   **XGBoost:** Mostró un Recall perfecto del 100% (no descartó ninguna operación ganadora), pero con mayor número de Falsos Positivos, resultando en un F1-Score de **0.640**.
+-   **Regresión Logística:** Como era de esperar dada la no-linealidad del mercado, quedó rezagada con un F1-Score de **0.522**.
+
+**Análisis de Importancia de Variables (Feature Importance):**
+El análisis paramétrico de los modelos basados en árboles reveló qué características técnicas del mercado tienen mayor poder predictivo. Destacan significativamente:
+1.  **Volatilidad (`ATR_14`):** El parámetro dominante absoluto. Entornos de alta volatilidad aumentan drásticamente la probabilidad matemática de que el ruido del mercado alcance el Stop Loss antes que el Take Profit.
+2.  **Momentum (`impulso`):** El tamaño relativo de la vela de entrada indica la convicción institucional detrás del movimiento.
+3.  **Sobreextensión del Precio (`dist_SMA_50` y `dist_SMA_200`):** La distancia porcentual del precio respecto a las medias móviles principales resultó crítica, confirmando empíricamente el principio de "reversión a la media" del mercado.
+
+Concluido el análisis, el modelo ganador (Random Forest) fue exportado estáticamente mediante la librería *Joblib* junto con su escalador métrico, listo para ser desplegado como el núcleo de decisión probabilística del Agente Gestor de Cartera en la fase de simulación en vivo.

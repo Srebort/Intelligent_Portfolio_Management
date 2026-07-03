@@ -1,3 +1,9 @@
+"""
+Módulo con la implementación de los modelos predictivos base.
+Incluye Regresión Logística, Support Vector Machine (SVM) y Random Forest.
+Proporciona una clase base estandarizada para facilitar el entrenamiento y evaluación.
+"""
+
 import logging
 from typing import Dict, Any
 import numpy as np

@@ -1,3 +1,9 @@
+"""
+Módulo para el pipeline de Machine Learning.
+Se encarga de cargar el dataset, limpiar variables del futuro (evitar data leakage),
+y preparar los datos (partición cronológica y escalado) para el entrenamiento de los modelos predictivos.
+"""
+
 import pandas as pd
 import numpy as np
 import logging
