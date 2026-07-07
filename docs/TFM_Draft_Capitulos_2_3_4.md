@@ -70,14 +70,14 @@ El trading algorítmico, definido como la ejecución automatizada de órdenes de
 mediante reglas computacionales predeterminadas, ha experimentado un crecimiento exponencial
 desde la década de los noventa. Según datos de la U.S. Securities and Exchange Commission (SEC),
 los algoritmos generan actualmente más del 70% del volumen negociado en las principales bolsas
-americanas [cita]. Esta automatización, históricamente reservada a fondos de inversión
+americanas [1]. Esta automatización, históricamente reservada a fondos de inversión
 institucionales con acceso a infraestructuras tecnológicas de alto coste, ha comenzado a
 democratizarse gracias a la proliferación de APIs de datos de mercado y librerías de machine
 learning de código abierto.
 
-En el ámbito académico, el trabajo fundacional de Markowitz (1952) sobre la Teoría Moderna
+En el ámbito académico, el trabajo fundacional de Markowitz (1952) [2] sobre la Teoría Moderna
 de Carteras estableció los principios matemáticos de la diversificación óptima. Posteriormente,
-Fama y French (1993) demostraron que los mercados financieros no son perfectamente eficientes
+Fama y French (1993) [3] demostraron que los mercados financieros no son perfectamente eficientes
 y que determinados factores sistemáticos (valor, tamaño, momentum) permiten obtener rentabilidades
 ajustadas al riesgo superiores al mercado. Este hallazgo abrió la puerta al desarrollo de
 estrategias de inversión basadas en reglas cuantitativas.
@@ -99,7 +99,7 @@ Learning (XGBoost) entrenado sobre los resultados reales del backtester.
 El Análisis Multi-Timeframe (MTF) es una metodología ampliamente utilizada por traders
 institucionales que consiste en tomar decisiones de trading en una temporalidad operativa
 (corto plazo) únicamente cuando la tendencia en temporalidades superiores (largo plazo) es
-favorable a la dirección de la operación. Elder (1993), en su obra seminal "Trading for a
+favorable a la dirección de la operación. Elder (1993) [4], en su obra seminal "Trading for a
 Living", formalizó esta idea bajo la denominación "Sistema de la Triple Pantalla", donde
 se utilizan tres temporalidades con relación aproximada 1:5 entre sí.
 
@@ -107,9 +107,9 @@ La justificación matemática del MTF descansa en la teoría de ondas de mercado
 se mueven en tendencias anidadas de distintos órdenes de magnitud. Una vela de 4 horas alcista
 no es contradictoria con una tendencia semanal bajista; sin embargo, operar a favor de la
 tendencia de mayor orden estadísticamente aumenta la tasa de acierto y mejora el ratio
-riesgo-beneficio de las operaciones [cita].
+riesgo-beneficio de las operaciones [4].
 
-Trabajos como el de Appel (2005) y Murphy (1999) documentaron empíricamente que la
+Trabajos como el de Appel (2005) [5] y Murphy (1999) [6] documentaron empíricamente que la
 confirmación de la tendencia en temporalidades superiores antes de ejecutar una entrada en
 la temporalidad operativa reduce la frecuencia de señales falsas en un 30-40% respecto a
 sistemas que operan en una única temporalidad. Esta reducción de señales falsas es
@@ -149,25 +149,25 @@ Tabla 2.1: Comparativa entre sistemas de análisis de mercado
 ## 2.3 Machine Learning en la Predicción de Señales de Trading
 
 La aplicación de técnicas de aprendizaje automático a la predicción de movimientos bursátiles
-cuenta con una extensa literatura. Los primeros trabajos, como los de Kimoto et al. (1990)
-y Refenes et al. (1994), utilizaron redes neuronales feed-forward para predecir el índice
+cuenta con una extensa literatura. Los primeros trabajos, como los de Kimoto et al. (1990) [7]
+y Refenes et al. (1994) [8], utilizaron redes neuronales feed-forward para predecir el índice
 Nikkei y el S&P 500, respectivamente, con resultados prometedores pero difícilmente
 replicables por el problema del sobreajuste (overfitting).
 
 El advenimiento de los métodos de ensamblado (ensemble methods) supuso un avance significativo
 en la robustez de los modelos de predicción financiera. En particular:
 
-- **Random Forest** (Breiman, 2001): Genera múltiples árboles de decisión sobre submuestras
+- **Random Forest** (Breiman, 2001) [9]: Genera múltiples árboles de decisión sobre submuestras
   aleatorias del dataset (técnica de bagging) y promedia sus predicciones, reduciendo la
   varianza sin incrementar el sesgo. Su robustez a variables irrelevantes y su capacidad
   para manejar interacciones no lineales lo convierten en una línea base sólida para problemas
   de clasificación financiera.
 
-- **XGBoost** (Chen y Guestrin, 2016): Implementación optimizada del Gradient Boosting que
+- **XGBoost** (Chen y Guestrin, 2016) [10]: Implementación optimizada del Gradient Boosting que
   construye árboles de forma secuencial, donde cada árbol corrige los errores del anterior
   (técnica de boosting). Ha demostrado resultados estado del arte en múltiples competencias
   de predicción financiera (Kaggle) y en estudios académicos sobre clasificación de señales
-  de mercado [cita].
+  de mercado [10].
 
 La recomendación específica del tribunal de incluir una comparativa entre Regresión Logística,
 Random Forest y XGBoost responde a la necesidad académica de validar que la complejidad
@@ -187,7 +187,7 @@ El sistema propuesto en este TFM adopta un enfoque radicalmente distinto: el cla
 XGBoost no predice si el precio subirá genéricamente, sino si una señal técnica específica
 (ya filtrada por el sistema de Tiers) resultará rentable dadas las condiciones de gestión de
 riesgo definidas (Stop Loss y Take Profit). Esta formulación, denominada "confirmación de
-señal" en la literatura especializada [cita], presenta varias ventajas:
+señal" en la literatura especializada [11], presenta varias ventajas:
 
 1. El dataset de entrenamiento es balanceado naturalmente (las señales ganadoras y perdedoras
    tienen frecuencias comparables).
@@ -655,3 +655,184 @@ El análisis paramétrico de los modelos basados en árboles reveló qué caract
 3.  **Sobreextensión del Precio (`dist_SMA_50` y `dist_SMA_200`):** La distancia porcentual del precio respecto a las medias móviles principales resultó crítica, confirmando empíricamente el principio de "reversión a la media" del mercado.
 
 Concluido el análisis, el modelo ganador (Random Forest) fue exportado estáticamente mediante la librería *Joblib* junto con su escalador métrico, listo para ser desplegado como el núcleo de decisión probabilística del Agente Gestor de Cartera en la fase de simulación en vivo.
+
+
+## 4.6 El Agente Gestor de Cartera: `PortfolioAgent`
+
+Una vez que el filtro predictivo de Machine Learning aprueba una señal técnica, la decisión de inversión entra en su fase más crítica: ¿cuánto capital comprometer, cuándo salir y qué hacer si el mercado entra en un régimen adverso? Estas responsabilidades recaen sobre el `PortfolioAgent`, implementado en `src/models/agent_logic.py`.
+
+Este módulo constituye la **capa de orquestación superior** del sistema. Su función es actuar como el "director de inversiones" que coordina la inteligencia del modelo predictivo con las reglas matemáticas de gestión de capital, aplicando un conjunto de filtros defensivos basados en la literatura académica de gestión cuantitativa de carteras.
+
+El diseño del Agente responde directamente a los tres desafíos identificados en el Capítulo 3:
+1.  **Selección de señales de calidad:** El Agente aplica un umbral probabilístico estricto para filtrar las predicciones del Random Forest.
+2.  **Gestión dinámica del riesgo:** Se conecta con el `RiskManager` para calcular matemáticamente el número exacto de acciones a comprar.
+3.  **Control de exposición global:** Implementa múltiples reglas de rebalanceo para controlar la concentración sectorial, la correlación entre activos y el régimen macro del mercado.
+
+### 4.6.1 Filtro Probabilístico de la Inteligencia Artificial
+
+El primer filtro que aplica el `PortfolioAgent` es la comprobación de la probabilidad de éxito predicha por el modelo. Cada señal técnica validada por el `TierEvaluator` es escalada mediante el `scaler.pkl` y pasada al modelo `best_model.pkl` para obtener su probabilidad de alcanzar el Take Profit (`P(TP)`).
+
+El umbral de aceptación está configurado por defecto en **P(TP) ≥ 0.75** (75%). Este valor fue determinado empíricamente durante la evaluación del Sprint 4: por debajo de este umbral, el número de Falsos Positivos en el conjunto de test aumenta significativamente, erosionando la rentabilidad esperada de la cartera.
+
+Las señales por encima del umbral son ordenadas de mayor a menor probabilidad (ranking), garantizando que si la liquidez de la cartera no permite ejecutar todas las órdenes del día, el sistema invertirá primero en las oportunidades de mayor convicción estadística.
+
+### 4.6.2 Reglas de Rebalanceo Dinámico
+
+A diferencia de los sistemas de gestión pasiva de carteras (como la inversión en índices), el Agente implementa un conjunto de reglas activas de rebalanceo basadas en la literatura académica de finanzas cuantitativas. Estas reglas operan en cascada, de modo que si cualquiera de las comprobaciones globales falla, el Agente bloquea todas las nuevas compras del día sin necesidad de evaluar las señales individuales.
+
+#### Regla 1: Filtro de Pánico Macroeconómico — Filtro VIX
+
+Los mercados financieros no operan bajo una distribución estadística constante, sino bajo diferentes regímenes de volatilidad. Ang y Bekaert (2002) demostraron empíricamente mediante modelos de *Regime-Switching* que, cuando la volatilidad implícita se dispara, las correlaciones entre activos tienden a uno (todo cae simultáneamente), invalidando los supuestos de diversificación del modelo de Markowitz.
+
+El índice VIX (*CBOE Volatility Index*) es el indicador estándar de la industria para medir el "miedo" del mercado, calculado como la volatilidad implícita de las opciones sobre el S&P 500 a 30 días. Un VIX por encima de 30 puntos señala un régimen de pánico (*Risk-Off*), donde los modelos entrenados en periodos de normalidad pierden su validez estadística.
+
+El `PortfolioAgent` incorpora este principio como su primera comprobación: si el valor del VIX del día (extraído del dataset FRED como `VIXCLS`) supera el umbral de 30, el Agente no abre ninguna nueva posición independientemente de lo que prediga el modelo de Machine Learning, trasladándose a liquidez (cash) como estrategia defensiva.
+
+*Fuentes: [12] [13]*
+
+#### Regla 2: Kill-Switch Global — Interruptor de Emergencia por Máximo Drawdown
+
+Los stop-loss individuales de cada operación protegen contra el fracaso aislado de una empresa, pero no contra el colapso sistémico del mercado (un *Black Swan* o Cisne Negro). La Teoría de Protección de Carteras (*Constant Proportion Portfolio Insurance*, CPPI), formalizada por Black y Jones (1987), establece que debe existir un mecanismo global de última línea de defensa que suspenda la operativa cuando la pérdida acumulada de la cartera supere un umbral crítico.
+
+El `PortfolioAgent` implementa este principio mediante el **Kill-Switch Global**: si el valor total de la cartera (Total Equity) cae más de un **10% desde su máximo histórico** (parámetro `max_drawdown_limit = -0.10`), el Agente activa automáticamente un **período de enfriamiento de 30 días** (*cooling-off period*), durante el cual bloquea cualquier nueva apertura de posiciones. Este mecanismo garantiza que el sistema no continúe acumulando pérdidas en un mercado bajista estructural, esperando a que las condiciones se estabilicen antes de reanudar la operativa.
+
+*Fuente: [14]*
+
+#### Regla 3: Time-Stop — El Método de la Triple Barrera
+
+La literatura clásica de gestión de riesgo contempla únicamente dos barreras de salida: el Stop Loss (protección contra pérdidas) y el Take Profit (realización de ganancias). Sin embargo, López de Prado (2018), en su obra *Advances in Financial Machine Learning*, formaliza una tercera barrera: el **Time-Stop** o barrera temporal.
+
+El concepto académico subyacente es el de la *deriva del modelo* (*Model Drift*): las predicciones de un modelo de Machine Learning tienen una ventana de validez estadística. Si el mercado no se mueve en la dirección esperada dentro de un plazo razonable, la hipótesis del modelo sobre ese activo ha perdido su vigencia y mantener el capital inmovilizado genera un **Coste de Oportunidad** que erosiona la rentabilidad de la cartera.
+
+En el presente sistema, el Time-Stop opera con una doble condición de cierre: se cierra la posición si han transcurrido más de **30 días** desde la entrada (un mes de mercado) sin resultado, o si el retorno flotante de la posición ha caído por debajo del **−3%** sin haber alcanzado el Stop Loss definido por el `RiskManager`. Esta segunda condición permite capturar posiciones que se deterioran lentamente y que, de no cerrarse, acabarían tocando el Stop Loss en peores condiciones.
+
+*Fuente: [15]*
+
+#### Regla 4: Kelly Fraccional — Ajuste Dinámico del Riesgo
+
+La asignación fija de capital por Tier (Tier A* = 2%, Tier A = 1.5%, etc.) presenta una limitación: no se adapta a los periodos en los que el modelo de Machine Learning está en una racha de errores. El Criterio de Kelly, formalizado matemáticamente por Kelly (1956) y ampliado por MacLean, Thorp y Ziemba (2011), proporciona la fracción óptima del capital a invertir en función de la tasa de aciertos y el ratio ganancia/pérdida esperado:
+
+```
+f* = W − (1 − W) / R
+```
+
+Donde `f*` es la fracción óptima a invertir, `W` es la tasa de aciertos (*Win Rate*) del modelo y `R` es el ratio medio de ganancia sobre pérdida (*Payoff Ratio*).
+
+Dado que el Kelly Puro es matemáticamente agresivo (puede recomendar apostar el 50% del capital en una sola operación), el sistema implementa el **Half-Kelly** (`f* × 0.5`), estrategia estándar en los fondos cuantitativos institucionales, que mantiene un perfil de riesgo más conservador preservando la esencia del ajuste dinámico. El `PortfolioAgent` reevalúa el Kelly Factor cada 50 operaciones cerradas, reduciendo automáticamente el riesgo base de todos los Tiers si el modelo está atravesando un período de menor precisión.
+
+*Fuente: [16]*
+
+#### Regla 5: Límite de Correlación — Diversificación Cuantitativa (Markowitz)
+
+Cuando el mercado entra en una tendencia alcista sectorial, el modelo de Machine Learning puede emitir señales de compra simultáneas sobre varios activos del mismo sector. Sin embargo, activos de un mismo sector presentan un coeficiente de correlación de Pearson elevado, lo que implica que, ante una noticia adversa del sector, todas las posiciones caerían simultáneamente, concentrando el riesgo en lugar de diversificarlo.
+
+La Teoría Moderna de Carteras de Markowitz (1952) establece formalmente que la diversificación óptima requiere invertir en activos con correlaciones bajas entre sí, reduciendo el riesgo total de la cartera sin sacrificar la rentabilidad esperada.
+
+El `PortfolioAgent` implementa este principio calculando el coeficiente de correlación de Pearson entre el historial de precios del nuevo activo y los ya aprobados para comprar ese día. Si la correlación supera el umbral de **0.80**, la señal es descartada para evitar la concentración de riesgo sectorial.
+
+*Fuente: [2]*
+
+#### Regla 6: Filtro de Amplitud de Mercado — Market Breadth Filter
+
+La observación del nivel del S&P 500 como indicador de la salud del mercado puede ser engañosa: el índice puede subir impulsado únicamente por los 5 o 10 valores de mayor capitalización (los "Magnificent 7" tecnológicos), mientras que el 80% de las empresas están en tendencia bajista. Esta condición, conocida como *Bull Trap* o trampa alcista, genera señales de compra técnicas en un mercado estructuralmente débil.
+
+Faber (2007) formalizó el concepto de *Market Breadth* (*Amplitud de Mercado*) como filtro de posicionamiento táctico: el porcentaje de activos del universo de inversión que cotizan por encima de su Media Móvil de 200 períodos es un indicador robusto de la salud subyacente del mercado.
+
+El `PortfolioAgent` aplica este principio bloqueando nuevas compras cuando menos del **40% del universo de activos** cotiza por encima de su SMA_200. Este filtro funciona como una capa macroeconómica complementaria al Filtro VIX: mientras el VIX captura el pánico puntual (alta volatilidad implícita), el Breadth Filter captura el deterioro estructural gradual del mercado.
+
+*Fuente: [17]*
+
+### 4.6.3 Filtro de Liquidez y Slippage (Illiquidity Penalty)
+
+Una limitación fundamental de la mayoría de los backtests publicados en la literatura académica es la asunción de ejecución perfecta: se asume que el inversor puede comprar y vender exactamente al precio de cierre de la vela. En la realidad, esto no es posible por dos razones:
+
+1.  **Slippage (deslizamiento):** La diferencia entre el precio teórico de la orden y el precio real de ejecución, causada por el movimiento del mercado entre la decisión y la ejecución.
+2.  **Iliquidez:** En activos de bajo volumen de negociación, el *bid-ask spread* (diferencia entre el precio de compra y venta más favorable disponible) puede consumir una fracción significativa de los beneficios esperados.
+
+Amihud (2002) demostró empíricamente la existencia de una prima de iliquidez significativa en los mercados de renta variable: los activos con menor ratio de volumen sobre cambio de precio ofrecen mayores rentabilidades esperadas precisamente como compensación por su menor liquidez, pero generan costes de transacción implícitos que erosionan los resultados del backtesting si no se modelan correctamente.
+
+El módulo `Portfolio` (`src/environment/portfolio.py`) incorpora estos efectos de la siguiente manera:
+-   **Slippage Rate (0.05%):** El precio de ejecución real de cada orden se penaliza en un 0.05% respecto al precio teórico de cierre, simulando el coste del *bid-ask spread*.
+-   **Filtro de Volumen Mínimo:** Si el volumen medio de los últimos días del activo es inferior a 100.000 acciones diarias, la orden se rechaza automáticamente, evitando simular operaciones en activos prácticamente no negociables.
+
+*Fuente: [18]*
+
+### 4.6.4 Flujo de Decisión del Agente
+
+El proceso completo de decisión del `PortfolioAgent` sigue una cascada estricta de comprobaciones, de modo que si cualquier filtro global falla, se interrumpe la evaluación sin consumir recursos computacionales:
+
+```
+Inicio del ciclo diario
+        │
+        ▼
+[1] ¿Kill-Switch activado?  → SÍ → No operar (período enfriamiento 30 días)
+        │ NO
+        ▼
+[2] ¿VIX > 30?              → SÍ → No operar (régimen de pánico macro)
+        │ NO
+        ▼
+[3] ¿Breadth < 40%?         → SÍ → No operar (mercado estructuralmente débil)
+        │ NO
+        ▼
+[4] Por cada señal técnica del día:
+    ├── [4a] ¿P(TP) < 75%?        → Rechazar señal
+    ├── [4b] ¿Correlación > 0.8?  → Rechazar señal
+    └── [4c] RiskManager → Calcular Position Sizing
+        │
+        ▼
+[5] Ranking de órdenes (mayor probabilidad primero)
+        │
+        ▼
+[6] Portfolio.execute_trade() → Ejecutar compras (aplicando slippage + comisión)
+```
+
+Este diseño en cascada garantiza que las comprobaciones de mayor impacto y menor coste computacional (filtros globales de régimen) se ejecuten primero, preservando la eficiencia del sistema durante las simulaciones históricas de larga duración.
+
+
+# ===========================================================================
+# CAPÍTULO 7: REFERENCIAS BIBLIOGRÁFICAS
+# ===========================================================================
+
+Las referencias se presentan en formato APA 7.ª edición, ordenadas por número de aparición en el texto.
+
+[1] U.S. Securities and Exchange Commission (SEC). (2014). *Equity Market Structure Literature Review, Part II: High Frequency Trading*. SEC Staff Report. Recuperado de https://www.sec.gov/
+
+[2] Markowitz, H. (1952). Portfolio Selection. *The Journal of Finance*, *7*(1), 77–91. https://doi.org/10.2307/2975974
+
+[3] Fama, E. F., & French, K. R. (1993). Common risk factors in the returns on stocks and bonds. *Journal of Financial Economics*, *33*(1), 3–56. https://doi.org/10.1016/0304-405X(93)90023-5
+
+[4] Elder, A. (1993). *Trading for a Living: Psychology, Trading Tactics, Money Management*. John Wiley & Sons.
+
+[5] Appel, G. (2005). *Technical Analysis: Power Tools for Active Investors*. FT Press.
+
+[6] Murphy, J. J. (1999). *Technical Analysis of the Financial Markets: A Comprehensive Guide to Trading Methods and Applications*. New York Institute of Finance.
+
+[7] Kimoto, T., Asakawa, K., Yoda, M., & Takeoka, M. (1990). Stock market prediction system with modular neural networks. *Proceedings of the 1990 IJCNN International Joint Conference on Neural Networks*, 1–6. https://doi.org/10.1109/IJCNN.1990.137535
+
+[8] Refenes, A. N., Zapranis, A., & Francis, G. (1994). Stock performance modeling using neural networks: A comparative study with regression models. *Neural Networks*, *7*(2), 375–388. https://doi.org/10.1016/0893-6080(94)90030-2
+
+[9] Breiman, L. (2001). Random Forests. *Machine Learning*, *45*(1), 5–32. https://doi.org/10.1023/A:1010933404324
+
+[10] Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining*, 785–794. https://doi.org/10.1145/2939672.2939785
+
+[11] López de Prado, M. (2018). *Advances in Financial Machine Learning*. John Wiley & Sons. (Capítulo 3: The Triple-Barrier Method & Metalabealing). ISBN: 978-1119482086.
+
+[12] Ang, A., & Bekaert, G. (2002). International Asset Allocation with Regime Shifts. *The Review of Financial Studies*, *15*(4), 1137–1187. https://doi.org/10.1093/rfs/15.4.1137
+
+[13] Gomes, F., Khorunzhina, N., & Polkovnichenko, V. (2018). *Risk on-risk off: A regime switching model for active portfolio management*. Working Paper, EconStor / CETE.
+
+[14] Black, F., & Jones, R. (1987). Simplifying Portfolio Insurance. *The Journal of Portfolio Management*, *14*(1), 48–51. https://doi.org/10.3905/jpm.1987.409131
+
+[15] López de Prado, M. (2018). *Advances in Financial Machine Learning*. John Wiley & Sons. ISBN: 978-1119482086.
+
+[16] MacLean, L. C., Thorp, E. O., & Ziemba, W. T. (2011). *The Kelly Capital Growth Investment Criterion: Theory and Practice*. World Scientific. ISBN: 978-9814293495.
+
+[17] Faber, M. T. (2007). A Quantitative Approach to Tactical Asset Allocation. *The Journal of Wealth Management*, *10*(4), 12–28. https://doi.org/10.3905/jwm.2007.674809
+
+[18] Amihud, Y. (2002). Illiquidity and stock returns: cross-section and time-series effects. *Journal of Financial Markets*, *5*(1), 31–56. https://doi.org/10.1016/S1386-4181(01)00024-6
+
+[19] Fama, E. F. (1970). Efficient Capital Markets: A Review of Theory and Empirical Work. *The Journal of Finance*, *25*(2), 383–417. https://doi.org/10.2307/2325486
+
+[20] Williams, B. (1995). *Trading Chaos: Applying Expert Techniques to Maximize Your Profits*. John Wiley & Sons.
+
+[21] Harvey, C. R., Hoyle, E., Korgaonkar, R., Rattray, S., Sargaison, M., & Van Hemert, O. (2018). The Impact of Volatility Targeting. *The Journal of Portfolio Management*, *45*(1), 14–33. https://doi.org/10.3905/jpm.2018.45.1.014
