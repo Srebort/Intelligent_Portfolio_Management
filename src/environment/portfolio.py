@@ -70,11 +70,9 @@ class Portfolio:
 
         # --- Filtro de Liquidez (Illiquidity Penalty) ---
         if avg_volume is not None and avg_volume < self.min_volume_threshold:
-            print(
-                f"[Portfolio] ❌ Orden {side} {ticker} rechazada: volumen medio "
-                f"{avg_volume:,} < mínimo {self.min_volume_threshold:,} (activo ilíquido)."
-            )
-            return
+                print(f"[Portfolio] RECHAZADO {side} {ticker}: volumen medio "
+                      f"{avg_volume:,} < minimo {self.min_volume_threshold:,} (activo iliquido).")
+                return
 
         # --- Aplicar Slippage al precio de ejecución real ---
         if side.upper() == 'BUY':
@@ -91,7 +89,7 @@ class Portfolio:
                 self.cash -= total_cost
                 self.positions[ticker] = self.positions.get(ticker, 0.0) + quantity
             else:
-                print(f"[Portfolio] ⚠️  Sin liquidez para comprar {quantity} acciones de {ticker}.")
+                print(f"[Portfolio] Sin liquidez para comprar {quantity} acciones de {ticker}.")
 
         elif side.upper() == 'SELL':
             # Verificamos si tenemos suficientes acciones (con una pequeña tolerancia por float)

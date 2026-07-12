@@ -1,0 +1,471 @@
+Cargando dataset desde: data/processed/MULTI_LABELED_DATASET.csv
+Dataset cargado: 133 señales | 3 tickers | 128 fechas únicas
+ Modelo y scaler cargados correctamente en el Agente.
+Iniciando simulación: 2019-05-15 \u2192 2026-06-29
+Capital inicial: $100,000
+------------------------------------------------------------
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=78.6%
+Ajustando acciones de 735 a 614 para evitar apalancamiento.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=84.6%
+[TradeLog BUY]  V | Qty=268 | Precio=175.33 | SL=171.60 | TP=180.92 | Tier=B | P(TP)=84.6%
+[BUY] V | Qty=268 | Precio=175.33 | SL=171.60 | TP=180.92
+[ExitManager] TAKE_PROFIT | V | Qty=268 | Precio=181.15 | P&L=+1559.76$ (WIN)
+[TradeLog SELL] V | TAKE_PROFIT | P&L bruto=+1559.76$ | P&L neto=+1416.46$ | WIN
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=86.5%
+[TradeLog BUY]  V | Qty=275 | Precio=181.15 | SL=179.31 | TP=186.44 | Tier=C | P(TP)=86.5%
+[BUY] V | Qty=275 | Precio=181.15 | SL=179.31 | TP=186.44
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=87.5%
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+[ExitManager] STOP_LOSS | V | Qty=275 | Precio=174.08 | P&L=-1944.25$ (LOSS)
+[TradeLog SELL] V | STOP_LOSS | P&L bruto=-1944.25$ | P&L neto=-2090.78$ | LOSS
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=82.4%
+Ajustando acciones de 715 a 570 para evitar apalancamiento.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=85.2%
+[TradeLog BUY]  V | Qty=568 | Precio=174.26 | SL=172.52 | TP=178.96 | Tier=B | P(TP)=85.2%
+[BUY] V | Qty=568 | Precio=174.26 | SL=172.52 | TP=178.96
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=87.9%
+Ajustando acciones de 651 a 569 para evitar apalancamiento.
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=87.9%
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=88.7%
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=87.9%
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+[ExitManager] TAKE_PROFIT | V | Qty=568 | Precio=185.85 | P&L=+6583.12$ (WIN)
+[TradeLog SELL] V | TAKE_PROFIT | P&L bruto=+6583.12$ | P&L neto=+6276.31$ | WIN
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=22.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=43.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=35.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=47.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=50.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=54.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=51.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=25.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=64.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=72.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=62.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=70.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=70.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=69.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=69.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=69.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=62.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=60.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=55.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=67.6% < 75%
+[2021-08-23] Equity=$105,602 (+5.6%) | Posiciones abiertas=0 | Operaciones=3
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=22.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=17.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=17.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=31.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=38.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=23.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=13.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=23.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=42.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=43.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=47.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=32.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=44.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=25.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=32.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=28.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=28.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=41.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=48.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=63.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=71.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=74.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=83.9%
+Ajustando acciones de 480 a 465 para evitar apalancamiento.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=45.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=71.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=88.5%
+[TradeLog BUY]  V | Qty=274 | Precio=232.60 | SL=230.67 | TP=237.82 | Tier=C | P(TP)=88.5%
+[BUY] V | Qty=274 | Precio=232.60 | SL=230.67 | TP=237.82
+[ExitManager] STOP_LOSS | V | Qty=274 | Precio=225.06 | P&L=-2065.96$ (LOSS)
+[TradeLog SELL] V | STOP_LOSS | P&L bruto=-2065.96$ | P&L neto=-2254.06$ | LOSS
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=80.4%
+Ajustando acciones de 547 a 459 para evitar apalancamiento.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=86.8%
+Ajustando acciones de 466 a 451 para evitar apalancamiento.
+[TradeLog BUY]  V | Qty=451 | Precio=228.79 | SL=226.58 | TP=234.77 | Tier=B | P(TP)=86.8%
+[BUY] V | Qty=451 | Precio=228.79 | SL=226.58 | TP=234.77
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=87.8%
+[Simulación] V ya tiene posición abierta. Señal ignorada.
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] ACTIVADO. Drawdown=-100.0% < -10%. Operativa suspendida 1 mes hasta 2023-08-12.
+[2023-07-13] Equity=$9 (-100.0%) | Posiciones abiertas=1 | Operaciones=5
+[ExitManager] TAKE_PROFIT | V | Qty=451 | Precio=242.93 | P&L=+6374.89$ (WIN)
+[TradeLog SELL] V | TAKE_PROFIT | P&L bruto=+6374.89$ | P&L neto=+6055.77$ | WIN
+ [Kill-Switch] Período de enfriamiento terminado. Operativa reanudada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=83.7%
+[TradeLog BUY]  V | Qty=272 | Precio=242.93 | SL=240.92 | TP=247.92 | Tier=C | P(TP)=83.7%
+[BUY] V | Qty=272 | Precio=242.93 | SL=240.92 | TP=247.92
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] ACTIVADO. Drawdown=-60.5% < -10%. Operativa suspendida 1 mes hasta 2023-09-14.
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2023-09-14.
+ [Kill-Switch] Operativa suspendida hasta 2023-09-14.
+[ExitManager] STOP_LOSS | V | Qty=272 | Precio=230.14 | P&L=-3478.88$ (LOSS)
+[TradeLog SELL] V | STOP_LOSS | P&L bruto=-3478.88$ | P&L neto=-3671.89$ | LOSS
+ [Kill-Switch] Período de enfriamiento terminado. Operativa reanudada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=21.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=23.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=74.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=82.5%
+Ajustando acciones de 759 a 451 para evitar apalancamiento.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para MSFT con prob=75.1%
+[TradeLog BUY]  MSFT | Qty=117 | Precio=329.76 | SL=325.27 | TP=340.17 | Tier=C | P(TP)=75.1%
+[BUY] MSFT | Qty=117 | Precio=329.76 | SL=325.27 | TP=340.17
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para MSFT con prob=77.5%
+[Simulación] MSFT ya tiene posición abierta. Señal ignorada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para MSFT con prob=76.3%
+[Simulación] MSFT ya tiene posición abierta. Señal ignorada.
+[ExitManager] Sin precio de mercado para MSFT. Posición no evaluada.
+ [Kill-Switch] ACTIVADO. Drawdown=-36.7% < -10%. Operativa suspendida 1 mes hasta 2023-11-18.
+[ExitManager] Sin precio de mercado para MSFT. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2023-11-18.
+ [Kill-Switch] Operativa suspendida hasta 2023-11-18.
+[ExitManager] Sin precio de mercado para MSFT. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2023-11-18.
+[ExitManager] Sin precio de mercado para MSFT. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2023-11-18.
+[ExitManager] Sin precio de mercado para MSFT. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2023-11-18.
+[ExitManager] TAKE_PROFIT | MSFT | Qty=117 | Precio=382.69 | P&L=+6192.23$ (WIN)
+[TradeLog SELL] MSFT | TAKE_PROFIT | P&L bruto=+6192.23$ | P&L neto=+6067.19$ | WIN
+ [Kill-Switch] Período de enfriamiento terminado. Operativa reanudada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=71.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=37.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=31.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=74.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=26.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=62.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=17.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=13.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=14.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=12.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=53.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=28.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=39.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=39.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=32.4% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=14.4% < 75%
+[2024-07-29] Equity=$111,799 (+11.8%) | Posiciones abiertas=0 | Operaciones=7
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=69.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=74.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal APROBADA para V con prob=77.0%
+[TradeLog BUY]  V | Qty=248 | Precio=290.33 | SL=288.08 | TP=297.52 | Tier=C | P(TP)=77.0%
+[BUY] V | Qty=248 | Precio=290.33 | SL=288.08 | TP=297.52
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] ACTIVADO. Drawdown=-64.5% < -10%. Operativa suspendida 1 mes hasta 2024-12-06.
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2024-12-06.
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] Operativa suspendida hasta 2024-12-06.
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+ [Kill-Switch] Período de enfriamiento terminado. Operativa reanudada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=24.7% < 75%
+[ExitManager] Sin precio de mercado para V. Posición no evaluada.
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=21.6% < 75%
+[ExitManager] TAKE_PROFIT | V | Qty=248 | Precio=316.45 | P&L=+6477.76$ (WIN)
+[TradeLog SELL] V | TAKE_PROFIT | P&L bruto=+6477.76$ | P&L neto=+6252.04$ | WIN
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=68.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=65.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=19.9% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=70.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=38.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=23.3% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=39.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=60.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=39.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=31.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=39.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=36.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=53.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=28.5% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=36.1% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=34.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=41.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=13.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=38.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=27.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para MSFT. Prob=15.0% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para V. Prob=49.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=40.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=22.9% < 75%
+[2026-01-22] Equity=$118,051 (+18.1%) | Posiciones abiertas=0 | Operaciones=8
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=41.7% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=27.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=57.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=57.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=57.2% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=62.8% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=70.6% < 75%
+C:\Users\sergio.rebollo\AppData\Roaming\Python\Python313\site-packages\sklearn\utils\validation.py:2684: UserWarning: X has feature names, but StandardScaler was fitted without feature names
+  warnings.warn(
+ [IA] Señal RECHAZADA para AAPL. Prob=25.0% < 75%
+[2026-06-29] Equity=$118,051 (+18.1%) | Posiciones abiertas=0 | Operaciones=8
+--- RESUMEN ESTADÍSTICO ---
+  total_return_pct         : 18.05
+  max_drawdown_pct         : -99.99
+  total_trades             : 8
+  win_rate_pct             : 62.5
+  avg_win_usd              : 5213.55
+  avg_loss_usd             : -2672.24
+  profit_factor            : 3.25
+============================================================
+SIMULACIÓN COMPLETADA
+Capital inicial:        $     100,000
+Rentabilidad total:          +18.1%
+Max Drawdown:               -100.0%
+Total operaciones:                 8
+Win Rate:                      62.5%
+Profit Factor:                  3.25
+============================================================
+Resultados guardados en data/results/
+[Portfolio] Sin liquidez para comprar 614 acciones de V.
+[Portfolio] Sin liquidez para comprar 570 acciones de V.
+[Portfolio] Sin liquidez para comprar 465 acciones de V.
+[Portfolio] Sin liquidez para comprar 459 acciones de V.
+[Portfolio] Sin liquidez para comprar 451 acciones de V.
