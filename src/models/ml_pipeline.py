@@ -25,6 +25,7 @@ class MLPipeline:
         self.target = None
         self.scaler = StandardScaler()
         self.feature_names = None
+        self.entry_dates = None
         
     def load_data(self) -> pd.DataFrame:
         """
@@ -98,6 +99,10 @@ class MLPipeline:
         self.feature_names = features_df.columns.tolist()
         self.features = features_df.values
         
+        # Guardar fechas para el split cronológico manual
+        if 'fecha_entrada' in self.df.columns:
+            self.entry_dates = self.df['fecha_entrada'].copy()
+        
         logger.info(f"Features preparadas: {self.features.shape[1]} columnas.")
         
     def split_and_scale(self, n_splits: int = 5):
@@ -120,6 +125,35 @@ class MLPipeline:
             
             yield X_train_scaled, X_test_scaled, y_train, y_test
 
+    def train_test_split_by_date(self, split_date: str = "2024-01-01"):
+        """
+        Divide el dataset en Train (antes del split_date) y Test (después).
+        Escala los datos ajustando el scaler SOLO con el conjunto de Train (Out-of-Sample).
+        """
+        if self.entry_dates is None:
+            logger.error("No se encontraron fechas (entry_dates) para hacer el split.")
+            return None, None, None, None
+
+        split_ts = pd.to_datetime(split_date, utc=True)
+        # Convertir entry_dates a UTC si no lo están para poder comparar
+        dates_utc = pd.to_datetime(self.entry_dates, utc=True)
+        
+        train_mask = dates_utc < split_ts
+        test_mask = dates_utc >= split_ts
+        
+        train_index = train_mask[train_mask].index
+        test_index = test_mask[test_mask].index
+        
+        X_train, X_test = self.features[train_index], self.features[test_index]
+        y_train, y_test = self.target.iloc[train_index], self.target.iloc[test_index]
+        
+        # Escalar SOLO ajustando en Train
+        X_train_scaled = self.scaler.fit_transform(X_train)
+        X_test_scaled = self.scaler.transform(X_test)
+        
+        logger.info(f"Split por Fecha ({split_date}): Train={X_train.shape[0]} filas | Test={X_test.shape[0]} filas")
+        return X_train_scaled, X_test_scaled, y_train, y_test
+
 if __name__ == "__main__":
     # Prueba rápida del pipeline
     pipeline = MLPipeline()
@@ -128,5 +162,5 @@ if __name__ == "__main__":
     pipeline.prepare_features_and_target()
     
     if pipeline.features is not None:
-        for fold, (X_train, X_test, y_train, y_test) in enumerate(pipeline.split_and_scale(n_splits=3)):
-            logger.info(f"Fold {fold+1}: Train size: {X_train.shape[0]}, Test size: {X_test.shape[0]}")
+        X_train, X_test, y_train, y_test = pipeline.train_test_split_by_date()
+        logger.info(f"OOS Train size: {X_train.shape[0]}, Test size: {X_test.shape[0]}")
