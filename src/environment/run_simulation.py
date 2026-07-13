@@ -116,6 +116,12 @@ def run_simulation():
     # open_positions_meta: metadatos de cada posición abierta
     # { ticker: {quantity, entry_price, stop_loss, take_profit, entry_date} }
     open_positions_meta: dict = {}
+    
+    # latest_known_prices: { ticker: close_price }
+    # Mantiene el último precio de cierre visto para evitar que posiciones abiertas valgan 0
+    latest_known_prices: dict = {}
+    
+
 
     # ------------------------------------------------------------------
     # 2. BUCLE CRONOLÓGICO: señal por señal, agrupando por fecha
@@ -141,14 +147,13 @@ def run_simulation():
         mask    = df["fecha_entrada"].dt.normalize() == fecha_ts
         day_df  = df[mask].copy()
 
-        # Precios actuales del día: { ticker: close_price }
-        current_prices = dict(zip(day_df["Ticker"], day_df["close"]))
+        # Actualizar precios conocidos con los de las señales de hoy
+        for ticker, close_price in zip(day_df["Ticker"], day_df["close"]):
+            latest_known_prices[ticker] = close_price
 
-        # Añadir también precios de posiciones ya abiertas que puedan no
-        # tener señal nueva hoy (para poder evaluar su SL/TP correctamente)
-        for ticker in list(open_positions_meta.keys()):
-            if ticker not in current_prices and ticker in day_df["Ticker"].values:
-                current_prices[ticker] = day_df.loc[day_df["Ticker"] == ticker, "close"].iloc[0]
+        # Usar los últimos precios conocidos como precios actuales
+        # (Esto evita que una posición abierta caiga a 0$ si no hay señal hoy)
+        current_prices = latest_known_prices.copy()
 
         # ---------------------------------------------------------------
         # PASO 1: Calcular equity actual antes de cualquier operación
@@ -317,7 +322,7 @@ if __name__ == "__main__":
 
     # Guardar resultados para el Sprint 7 (análisis y gráficas)
     import os
-    os.makedirs("data/results", exist_ok=True)
-    equity_df.to_csv("data/results/equity_curve.csv", index=False)
-    trades_df.to_csv("data/results/trade_log.csv", index=False)
-    logger.info("Resultados guardados en data/results/")
+    os.makedirs("results/logs", exist_ok=True)
+    equity_df.to_csv("results/logs/equity_curve.csv", index=False)
+    trades_df.to_csv("results/logs/trade_log.csv", index=False)
+    logger.info("Resultados guardados en results/logs/")
