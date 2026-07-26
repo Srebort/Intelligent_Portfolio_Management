@@ -17,16 +17,11 @@ que la tendencia sea alcista en las tres temporalidades jerárquicas:
 Si alguna de estas tres condiciones falla, la señal NO se genera,
 independientemente de lo válido que sea el patrón en 4H.
 
-Tier A* (Probabilidad Extrema):
-    - Falsa ruptura de soportes + barrido de liquidez (Wick Reclaim).
-    - Rechazo del nivel de retroceso de Fibonacci 61.8%.
-    - El precio recupera y cierra cerca de la SMA 200.
-    - Exige divergencia alcista confirmada en el RSI.
-
 Tier A (Probabilidad Alta):
     - Retroceso ordenado a favor de la tendencia.
     - El precio visita y rechaza el nivel Fibonacci 61.8%.
-    - Cierre próximo a la SMA 200, sin exigir wick agresivo ni divergencia.
+    - Cierre próximo a la SMA 200.
+    - Incluye señales con divergencia RSI (antes Tier A*).
 
 Tier B (Probabilidad Media):
     - Doble Suelo / Re-testeo de una zona de valor.
@@ -52,12 +47,13 @@ class TierEvaluator:
     millones de filas sin degradar el rendimiento.
 
     La asignación se realiza de mayor a menor prioridad: si una vela cumple
-    el criterio de Tier A*, se le asigna A* aunque también cumpla el de A.
+    La asignación se realiza de mayor a menor prioridad:
+    el sistema tiene 3 Tiers: A (alta), B (media) y C (baja).
     """
 
     def __init__(
         self,
-        fib_tolerance: float = 1.5,
+        fib_tolerance: float = 3.0,
         max_sma_dist: float = 5.0,
         slope_1w_min: float = 0.0,
     ):
@@ -67,7 +63,7 @@ class TierEvaluator:
         Args:
             fib_tolerance (float): Distancia porcentual máxima al nivel Fib 61.8%
                                    para considerar que el precio lo está "rechazando".
-                                   Por defecto 1.5%.
+                                   Por defecto 3.0%.
             max_sma_dist  (float): Distancia porcentual máxima a la SMA 200 en 4H
                                    para que la entrada no esté sobreextendida.
                                    Por defecto 5.0%.
@@ -85,7 +81,7 @@ class TierEvaluator:
 
         Lee las columnas de features técnicas y de Price Action ya calculadas
         y devuelve el DataFrame original con una nueva columna 'Tier' que
-        puede contener los valores 'A*', 'A', 'B', 'C' o None (sin señal).
+        puede contener los valores 'A', 'B', 'C' o None (sin señal).
 
         Args:
             df (pd.DataFrame): DataFrame con todas las features de los módulos
@@ -182,18 +178,43 @@ class TierEvaluator:
             cross_up = (df_out["close"] > last_resistance) & (df_out["close"].shift(1) <= last_resistance.shift(1))
             
             # Filtro de Vela Escapada en Ruptura: No perseguir el precio si cerró muy por encima de la resistencia
-            atr = df_out.get("ATR_14", pd.Series([10.0] * len(df_out), index=df_out.index))
-            not_escaped_breakout = (df_out["close"] - last_resistance) <= (1.5 * atr)
+            # Máxima distancia permitida: 1.5% del valor de la resistencia
+            not_escaped_breakout = ((df_out["close"] - last_resistance) / last_resistance) <= 0.015
             
             # Filtro de Resistencia Madura (Edad del Fractal):
-            # Calculamos la edad del fractal (velas desde que se formó).
+            # Eliminamos fractales de 1-2 velas (ruido puro). Exigimos mínimo 5 velas
+            # de antigüedad para asegurar que el nivel fue "testado" antes de romperse.
+            # (La criba macro de 30 velas en patterns.py ya garantiza la importancia
+            # estructural, este filtro añade el requisito mínimo de tiempo probado.)
             bars = pd.Series(np.arange(len(df_out)), index=df_out.index)
             last_res_bar = bars.where(df_out["is_resistance_fractal"] == 1).ffill()
             fractal_age = bars - last_res_bar
-            # Exigimos que la resistencia tenga al menos 15 velas de antigüedad (~2.5 días en 4H)
-            mature_resistance = fractal_age >= 15
+            mature_resistance = fractal_age >= 5
+
+            # -----------------------------------------------------------------
+            # FILTRO "RESISTENCIA CONSUMIDA" (Anti-reentrada en la misma zona)
+            # -----------------------------------------------------------------
+            raw_breakout = cross_up & not_escaped_breakout & mature_resistance
             
-            is_breakout = cross_up & not_escaped_breakout & mature_resistance
+            # Construimos la serie final filtrando re-entradas en el mismo nivel
+            is_breakout_list = [False] * len(df_out)
+            consumed_resistance = None  # Precio de la resistencia ya "consumida"
+
+            for i, (idx, val) in enumerate(raw_breakout.items()):
+                if val:  # Hay un breakout potencial
+                    res_level = last_resistance.iloc[i]
+                    if consumed_resistance is None or abs(res_level - consumed_resistance) / consumed_resistance > 0.01:
+                        # Nuevo nivel de resistencia (>1% alejado del consumido) → señal válida
+                        is_breakout_list[i] = True
+                        consumed_resistance = res_level
+                    # Si es el mismo nivel consumido → ignorar (re-entrada bloqueada)
+                elif consumed_resistance is not None:
+                    # Si el precio cae por debajo de la resistencia consumida, la "liberamos"
+                    close_i = df_out["close"].iloc[i]
+                    if close_i < consumed_resistance * 0.99:  # 1% por debajo → liberada
+                        consumed_resistance = None
+
+            is_breakout = pd.Series(is_breakout_list, index=df_out.index)
         else:
             is_breakout = pd.Series([False] * len(df_out), index=df_out.index)
 
@@ -214,36 +235,37 @@ class TierEvaluator:
         # y este toque es un retroceso válido, no un cruce de tendencia bajista a alcista.
         is_below_sma = df_out["close"] < sma_200
         candles_below = is_below_sma.rolling(window=20, min_periods=1).sum()
-        valid_pullback = candles_below <= 3
+        valid_pullback = candles_below <= 6
 
         # -----------------------------------------------------------------
         # LÓGICA DE TIERS (Asignación por prioridad descendente)
-        # -----------------------------------------------------------------
+        # Tier A* eliminado: sus señales se absorben en Tier A
+        # Tier A: Alta probabilidad — retroceso a la SMA 200 (Fibonacci 61.8% desactivado)
+        # cond_A = cond_4h & near_fib_618 & near_sma & valid_pullback & not_escaped
+        cond_A_raw = cond_4h & near_sma & not_escaped # valid_pullback desactivado
+        
+        # Cooldown de 12 velas (aprox 2 días en 4H) para evitar entrar repetidas veces en el mismo punto
+        cooldown_period = 12
+        cond_A_shifted = cond_A_raw.shift(1, fill_value=False)
+        recent_signals = cond_A_shifted.rolling(window=cooldown_period, min_periods=1).max()
+        cond_A = cond_A_raw & (recent_signals == 0)
 
-        # Tier A*: Mayor exigencia — requiere convergencia de Fib, SMA y Divergencia RSI
-        # (Nuevas reglas: debe ser un pullback válido y no estar sobre-extendido)
-        cond_A_star = filtro_base & near_fib_618 & bullish_div & near_sma & valid_pullback & not_escaped
+        # Tier B: Media probabilidad — doble suelo en zona de soporte estructural
+        cond_B = cond_4h & is_support
 
-        # Tier A: Alta probabilidad — retroceso profundo sin exigir divergencia
-        cond_A = filtro_base & near_fib_618 & near_sma & valid_pullback & not_escaped & ~cond_A_star
+        # Tier C: Breakout puro sobre resistencia madura
+        # Sin filtros de MTF diario/semanal para capturar rupturas tempranas
+        cond_C = cond_4h & is_breakout
 
-        # Tier B: Media probabilidad — doble suelo en zona de soporte
-        # (Modificado: Se acepta cualquier Suelo Estructural Macro durante la tendencia alcista)
-        cond_B = filtro_base & is_support & ~cond_A_star & ~cond_A
-
-        # Tier C: Breakout puro (No exige pullback de SMA porque opera rupturas al alza)
-        cond_C = filtro_base & is_breakout & ~cond_A_star & ~cond_A & ~cond_B
-
-        # Asignar Tier (de menor a mayor prioridad para que los mejores sobreescriban)
+        # Asignar Tier
         df_out["Tier"] = None
-        df_out.loc[cond_C,      "Tier"] = "C"
-        df_out.loc[cond_B,      "Tier"] = "B"
-        df_out.loc[cond_A,      "Tier"] = "A"
-        df_out.loc[cond_A_star, "Tier"] = "A*"
+        df_out.loc[cond_C, "Tier"] = "C"
+        df_out.loc[cond_B, "Tier"] = "B"
+        df_out.loc[cond_A, "Tier"] = "A"
 
         logger.info(
-            "Tiers evaluados | A*=%d | A=%d | B=%d | C=%d | Sin señal=%d",
-            cond_A_star.sum(), cond_A.sum(), cond_B.sum(), cond_C.sum(),
+            "Tiers evaluados | A=%d | B=%d | C=%d | Sin señal=%d",
+            cond_A.sum(), cond_B.sum(), cond_C.sum(),
             df_out["Tier"].isna().sum(),
         )
         return df_out

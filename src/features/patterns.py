@@ -80,7 +80,7 @@ def calculate_bill_williams_fractals(
         return pd.DataFrame(index=df.index)
 
     resultado = pd.DataFrame(index=df.index)
-    
+
     # Evaluar resistencia (Up Fractal)
     # El centro está en t - period (shift(period))
     cond_resistencia = True
@@ -89,7 +89,6 @@ def calculate_bill_williams_fractals(
             continue
         # El máximo del centro debe ser estrictamente mayor que el máximo de sus vecinos
         cond_resistencia &= (df[high_col].shift(period) > df[high_col].shift(i))
-    
     # La vela actual (shift(0)) debe ser también menor al centro
     cond_resistencia &= (df[high_col].shift(period) > df[high_col])
 
@@ -100,28 +99,65 @@ def calculate_bill_williams_fractals(
             continue
         # El mínimo del centro debe ser estrictamente menor que el mínimo de sus vecinos
         cond_soporte &= (df[low_col].shift(period) < df[low_col].shift(i))
-        
     cond_soporte &= (df[low_col].shift(period) < df[low_col])
 
-    # Aplicar la criba macro (agrupación de fractales importantes)
-    # Un fractal solo es válido si el centro es el min/max de las últimas 'macro_period' velas.
-    # El centro está en t - period, así que comparamos contra una ventana retrospectiva.
-    macro_period = 30  # Aprox 1 semana en velas de 4H (6 velas/día * 5 días)
-    
-    # Precomputar max/min móvil (shifted para no incluir el futuro, alineado al centro)
-    # Queremos el máximo de las 'macro_period' velas anteriores al centro.
+    # Criba Macro: solo guarda el fractal si es el max/min absoluto de las últimas 30 velas
+    macro_period = 30  # ~1 semana en 4H
     rolling_max = df[high_col].shift(period).rolling(window=macro_period, min_periods=1).max()
     rolling_min = df[low_col].shift(period).rolling(window=macro_period, min_periods=1).min()
-    
-    cond_resistencia_macro = (df[high_col].shift(period) >= rolling_max)
-    cond_soporte_macro = (df[low_col].shift(period) <= rolling_min)
-    
-    cond_resistencia &= cond_resistencia_macro
-    cond_soporte &= cond_soporte_macro
+    cond_resistencia &= (df[high_col].shift(period) >= rolling_max)
+    cond_soporte     &= (df[low_col].shift(period)  <= rolling_min)
 
-    # Rellenar los valores (1 o 0) usando np.where (vectorizado)
+    # Rellenar los valores raw (1 o 0) usando np.where (vectorizado)
+
     resultado["is_resistance_fractal"] = np.where(cond_resistencia, 1, 0)
     resultado["is_support_fractal"]    = np.where(cond_soporte, 1, 0)
+
+    # -----------------------------------------------------------------
+    # AGRUPACIÓN POR ZONA DE PRECIO (Zone Clustering)
+    # -----------------------------------------------------------------
+    # Tras la criba temporal, agrupamos fractales que estén muy cerca en
+    # precio (dentro del ±1% del primer fractal "ancla" de cada zona).
+    # Solo el primer fractal de cada zona sobrevive; los demás se eliminan.
+    # Esto evita que el sistema compre la misma resistencia 3 veces seguidas.
+    # -----------------------------------------------------------------
+    zone_tolerance = 0.01  # 1% — configurable
+
+    def _cluster_fractals(series: pd.Series, prices: pd.Series) -> pd.Series:
+        """
+        Elimina fractales que caen dentro del ±zone_tolerance% del primer
+        fractal "ancla" de su zona. Los recorre cronológicamente.
+        """
+        clustered = series.copy()
+        anchor_price = None
+
+        for idx in series.index:
+            if series[idx] == 1:
+                price = prices[idx]
+                if anchor_price is None:
+                    # Primer fractal: es el ancla de la nueva zona
+                    anchor_price = price
+                else:
+                    dist = abs(price - anchor_price) / anchor_price
+                    if dist <= zone_tolerance:
+                        # Dentro de la zona del ancla → eliminar este fractal
+                        clustered[idx] = 0
+                    else:
+                        # Nuevo nivel de precio → es el ancla de una nueva zona
+                        anchor_price = price
+        return clustered
+
+    # Extraer precios en los índices de las velas centrales de los fractales
+    # (el centro del fractal está en t - period, pero lo mapeamos al índice actual)
+    highs = df[high_col].shift(period)
+    lows  = df[low_col].shift(period)
+
+    resultado["is_resistance_fractal"] = _cluster_fractals(
+        resultado["is_resistance_fractal"], highs
+    )
+    resultado["is_support_fractal"] = _cluster_fractals(
+        resultado["is_support_fractal"], lows
+    )
 
     logger.debug(
         "Fractales estructurales calculados. Soportes: %d, Resistencias: %d",
@@ -129,6 +165,7 @@ def calculate_bill_williams_fractals(
         resultado["is_resistance_fractal"].sum()
     )
     return resultado
+
 
 
 # ===========================================================================

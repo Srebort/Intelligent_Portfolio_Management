@@ -120,11 +120,25 @@ class ExitManager:
             close_reason = None
 
             # ------------------------------------------------------------------
-            # BARRERA 1: Stop Loss
+            # LÓGICA BREAK EVEN (Alineada con backtester.py)
+            # Si el precio alcanza +1R de beneficio, el SL se mueve a Entry.
+            # ------------------------------------------------------------------
+            be_activated = meta.get("be_activated", False)
+            if not be_activated and stop_loss is not None:
+                riesgo = entry_price - stop_loss
+                if riesgo > 0 and current_price >= (entry_price + (riesgo * 2)):
+                    meta["be_activated"] = True
+                    be_activated = True
+                    logger.info(f"[ExitManager] Break Even activado para {ticker} (+2R)")
+
+            eff_stop_loss = entry_price if be_activated else stop_loss
+
+            # ------------------------------------------------------------------
+            # BARRERA 1: Stop Loss / Break Even
             # Si el precio actual toca o baja del nivel de SL, cerramos.
             # ------------------------------------------------------------------
-            if stop_loss is not None and current_price <= stop_loss:
-                close_reason = "STOP_LOSS"
+            if eff_stop_loss is not None and current_price <= eff_stop_loss:
+                close_reason = "BREAK_EVEN" if be_activated else "STOP_LOSS"
 
             # ------------------------------------------------------------------
             # BARRERA 2: Take Profit

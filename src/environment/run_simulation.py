@@ -23,6 +23,7 @@ Referencias:
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 
@@ -40,14 +41,13 @@ logger = logging.getLogger("RunSimulation")
 
 # ---------------------------------------------------------------------------
 # CONFIGURACIÓN DE LA SIMULACIÓN
-# ---------------------------------------------------------------------------
 DATASET_PATH    = "data/processed/MULTI_LABELED_DATASET.csv"
 MODEL_PATH      = "models/best_model.pkl"
 SCALER_PATH     = "models/scaler.pkl"
 INITIAL_CAPITAL = 100_000.0          # Capital inicial en USD
 COMMISSION_RATE = 0.001              # 0.1% por operación
 SLIPPAGE_RATE   = 0.0005             # 0.05% de deslizamiento
-TIME_STOP_DAYS  = 30                 # Time-Stop: 1 mes
+TIME_STOP_DAYS  = 9999               # Time-Stop: Desactivado temporalmente (antes 30)
 
 # Columnas de features EXACTAS que usó el MLPipeline en el Sprint 4
 # (obtenidas ejecutando: MLPipeline().prepare_features_and_target())
@@ -60,13 +60,10 @@ FEATURES_COLS = [
     'SMA_200_1W', 'slope_SMA_200_1W', 'dist_SMA_200_1W', 'is_resistance_fractal', 
     'is_support_fractal', 'is_hammer', 'is_inverted_hammer', 'is_bullish_wick_reclaim', 
     'is_bearish_wick_reclaim', 'dist_fib_retr_382', 'dist_fib_retr_618', 'dist_fib_ext_up_382', 
-    'dist_fib_ext_up_618', 'dist_fib_ext_dn_382', 'dist_fib_ext_dn_618', 'impulso', 
-    'Tier_A', 'Tier_A*', 'Tier_B', 'Tier_C'
+    'dist_fib_ext_up_618', 'dist_fib_ext_dn_382', 'dist_fib_ext_dn_618', 'impulso', 'BE_Hit',
+    'Tier_A', 'Tier_B', 'Tier_C'
 ]    # One-Hot Encoding de Tier (generado por MLPipeline con pd.get_dummies)
 
-# Columnas de SL y TP que usará el ExitManager
-SL_COL = "SL1_ATR_precio"   # Stop Loss: 1×ATR desde entrada
-TP_COL = "TP1_2R_precio"    # Take Profit: ratio 1:2 Riesgo/Beneficio
 
 
 def load_dataset(path: str) -> pd.DataFrame:
@@ -84,6 +81,50 @@ def load_dataset(path: str) -> pd.DataFrame:
     return df
 
 
+def load_price_panel(raw_dir: str = "data/raw") -> pd.DataFrame:
+    """
+    Carga todos los CSVs de precios 4H descargados de Tiingo y construye
+    un panel de precios diarios: filas=fechas, columnas=tickers.
+
+    Esto permite al simulador conocer el precio REAL de cada activo en
+    cada día de mercado, no solo en los días con señales de Tier.
+    Así el ExitManager puede evaluar SL/TP con precios actualizados.
+
+    Returns:
+        pd.DataFrame: Panel con índice de fechas (UTC, normalizado a día)
+                      y una columna por ticker con el precio de cierre.
+    """
+    raw_path = Path(raw_dir)
+    frames = {}
+
+    for csv_file in sorted(raw_path.glob("*_4Hour.csv")):
+        ticker = csv_file.stem.replace("_4Hour", "")
+        try:
+            df_raw = pd.read_csv(csv_file, index_col="datetime", parse_dates=True)
+            if df_raw.index.tz is None:
+                df_raw.index = df_raw.index.tz_localize("UTC")
+            else:
+                df_raw.index = df_raw.index.tz_convert("UTC")
+            # Resamplear a diario: tomar el último cierre de cada día de mercado
+            daily_close = df_raw["close"].resample("1D").last().dropna()
+            frames[ticker] = daily_close
+        except Exception as e:
+            logger.warning(f"No se pudo cargar precio raw para {ticker}: {e}")
+
+    if not frames:
+        logger.warning("No se encontraron CSVs en data/raw/. Los precios diarios no estarán disponibles.")
+        return pd.DataFrame()
+
+    panel = pd.DataFrame(frames)
+    # Forward-fill para cubrir fines de semana / festivos
+    panel = panel.ffill()
+    logger.info(
+        f"Panel de precios cargado: {len(panel)} días × {len(panel.columns)} tickers "
+        f"({panel.index[0].date()} → {panel.index[-1].date()})"
+    )
+    return panel
+
+
 def run_simulation():
     """
     Función principal. Ejecuta la simulación histórica completa y devuelve
@@ -94,6 +135,11 @@ def run_simulation():
     # ------------------------------------------------------------------
     df = load_dataset(DATASET_PATH)
 
+    # Cargar panel de precios diarios reales desde los CSVs raw.
+    # FIX: sin esto, los precios se quedan congelados en el valor de entrada
+    # y el ExitManager nunca puede evaluar SL/TP correctamente.
+    price_panel = load_price_panel("data/raw")
+
     portfolio = Portfolio(
         initial_capital=INITIAL_CAPITAL,
         commission_rate=COMMISSION_RATE,
@@ -103,7 +149,7 @@ def run_simulation():
     agent = PortfolioAgent(
         model_path=MODEL_PATH,
         scaler_path=SCALER_PATH,
-        prob_threshold=0.75,
+        prob_threshold=0.60,
     )
 
     exit_mgr = ExitManager(
@@ -116,9 +162,10 @@ def run_simulation():
     # open_positions_meta: metadatos de cada posición abierta
     # { ticker: {quantity, entry_price, stop_loss, take_profit, entry_date} }
     open_positions_meta: dict = {}
-    
+
     # latest_known_prices: { ticker: close_price }
-    # Mantiene el último precio de cierre visto para evitar que posiciones abiertas valgan 0
+    # Se inicializa con datos del panel raw (precios reales) y se actualiza
+    # cada día. Garantiza que nunca usemos precios congelados.
     latest_known_prices: dict = {}
     
 
@@ -147,12 +194,29 @@ def run_simulation():
         mask    = df["fecha_entrada"].dt.normalize() == fecha_ts
         day_df  = df[mask].copy()
 
-        # Actualizar precios conocidos con los de las señales de hoy
+        # ---------------------------------------------------------------
+        # ACTUALIZACIÓN DE PRECIOS: panel raw (fuente primaria)
+        # ---------------------------------------------------------------
+        # 1. Obtener precios reales del día desde el panel de CSVs raw.
+        #    Buscamos la fecha más cercana anterior disponible (ffill ya aplicado).
+        if not price_panel.empty:
+            # Buscar la fila del panel más cercana a la fecha actual
+            panel_dates = price_panel.index
+            # Fecha de cierre de mercado: tomar la última fecha <= fecha_ts
+            valid_dates = panel_dates[panel_dates <= fecha_ts]
+            if len(valid_dates) > 0:
+                panel_row = price_panel.loc[valid_dates[-1]]
+                for ticker_col in panel_row.index:
+                    price = panel_row[ticker_col]
+                    if pd.notna(price) and price > 0:
+                        latest_known_prices[ticker_col] = float(price)
+
+        # 2. Sobrescribir con los precios exactos de las señales de hoy
+        #    (precio de cierre de la vela de señal — máxima precisión)
         for ticker, close_price in zip(day_df["Ticker"], day_df["close"]):
             latest_known_prices[ticker] = close_price
 
-        # Usar los últimos precios conocidos como precios actuales
-        # (Esto evita que una posición abierta caiga a 0$ si no hay señal hoy)
+        # Precios actuales = combinación de panel real + señales del día
         current_prices = latest_known_prices.copy()
 
         # ---------------------------------------------------------------
@@ -180,6 +244,18 @@ def run_simulation():
                     exit_price=closed["exit_price"],
                     reason=closed["reason"],
                 )
+                
+                # Registrar resultado en el Agente (para Cooldown y Kelly)
+                res_enum = "WIN" if closed["pnl"] >= 0 else "LOSS"
+                if closed["reason"] == "TIME_STOP":
+                    res_enum = "TIME_STOP"
+                    
+                agent.register_trade_result(
+                    ticker=closed["ticker"],
+                    result=res_enum,
+                    current_date=current_date
+                )
+                
                 agent.trade_log.append({
                     "result": "WIN" if closed["pnl"] >= 0 else "LOSS",
                     "pnl":    closed["pnl"],
@@ -201,7 +277,7 @@ def run_simulation():
             # One-Hot Encoding de Tier (replicando lo que hizo MLPipeline en entrenamiento)
             if "Tier" in day_df.columns:
                 tier_dummies = pd.get_dummies(day_df["Tier"], prefix="Tier")
-                for col in ["Tier_A", "Tier_A*", "Tier_B", "Tier_C"]:
+                for col in ["Tier_A", "Tier_B", "Tier_C"]:
                     if col in tier_dummies.columns:
                         day_df[col] = tier_dummies[col].astype(int)
                     else:
@@ -232,13 +308,24 @@ def run_simulation():
             ticker   = order["ticker"]
             quantity = order["quantity"]
             price    = order["price"]
-            sl       = order.get("stop_loss")
+            sl       = None
             tp       = None
+            tier     = order.get("tier")
 
-            # Obtener el nivel de TP del dataset si existe
+            # Asignación dinámica de SL/TP alineada con las etiquetas de entrenamiento
             row_ticker = day_df[day_df["ticker"] == ticker]
-            if not row_ticker.empty and TP_COL in row_ticker.columns:
-                tp = row_ticker[TP_COL].iloc[0]
+            if not row_ticker.empty:
+                sl_col = "SL1_ATR_precio"
+                tp_col = "TP3_3R_SL1_ATR_precio"
+                
+                if sl_col in row_ticker.columns:
+                    sl = row_ticker[sl_col].iloc[0]
+                if tp_col in row_ticker.columns:
+                    tp = row_ticker[tp_col].iloc[0]
+
+            # Fallback de seguridad
+            if pd.isna(sl): 
+                sl = order.get("stop_loss")
 
             # Verificar que no hay ya una posición abierta en ese ticker
             if ticker in open_positions_meta:

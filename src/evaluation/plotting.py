@@ -94,11 +94,12 @@ def plot_equity_vs_benchmarks(
     ax1.set_yticklabels(['${:,.0f}K'.format(x/1000) for x in current_values])
     
     # --- SUBPLOT 2: Drawdowns ---
-    ax2.fill_between(df.index, df['drawdown_pct'], 0, color='#d62728', alpha=0.3)
-    ax2.plot(df.index, df['drawdown_pct'], color='#d62728', linewidth=1)
+    ax2.fill_between(df.index, df['drawdown_pct'], 0, color='#9467bd', alpha=0.3)
+    ax2.plot(df.index, df['drawdown_pct'], color='#9467bd', linewidth=2, label="Portfolio DD")
     
     ax2.set_ylabel('Drawdown (%)')
     ax2.set_xlabel('Fecha')
+    ax2.legend(loc="lower left", fontsize=10)
     
     # Limitar el eje Y de drawdowns (ej. desde el peor DD hasta 0)
     min_dd = df['drawdown_pct'].min()
@@ -113,5 +114,71 @@ def plot_equity_vs_benchmarks(
     
     logger.info(f"Gráfico comparativo guardado exitosamente en: {output_path}")
 
+def plot_drawdown_comparison(
+    equity_path: str = "results/logs/equity_curve.csv",
+    benchmark_path: str = "results/logs/benchmarks.csv",
+    output_dir: str = "results/figures"
+):
+    """
+    Genera un gráfico dedicado exclusivamente a comparar los drawdowns.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    try:
+        equity_df = pd.read_csv(equity_path, parse_dates=["date"])
+        bench_df = pd.read_csv(benchmark_path, parse_dates=["date"])
+    except FileNotFoundError as e:
+        logger.error(f"Falta archivo: {e}")
+        return
+        
+    if equity_df['date'].dt.tz is None:
+        equity_df['date'] = pd.to_datetime(equity_df['date'], utc=True)
+    if bench_df['date'].dt.tz is None:
+        bench_df['date'] = pd.to_datetime(bench_df['date'], utc=True)
+        
+    df = pd.merge(equity_df, bench_df, on="date", how="inner")
+    if df.empty:
+        return
+        
+    df.set_index("date", inplace=True)
+    bench_tickers = [col for col in bench_df.columns if col != "date"]
+    
+    plt.figure(figsize=(14, 6))
+    plt.title('Comparativa de Drawdowns: Portfolio Algorítmico vs Mercado', fontsize=16, fontweight='bold')
+    
+    # Dibujar drawdowns de benchmarks
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    for i, ticker in enumerate(bench_tickers):
+        color = colors[i % len(colors)]
+        peak = df[ticker].cummax()
+        bench_dd = (df[ticker] - peak) / peak * 100
+        plt.plot(df.index, bench_dd, color=color, linewidth=1.5, alpha=0.7, label=f"Benchmark: {ticker}")
+        
+    # Dibujar drawdown del Portfolio
+    plt.fill_between(df.index, df['drawdown_pct'], 0, color='#9467bd', alpha=0.3)
+    plt.plot(df.index, df['drawdown_pct'], color='#9467bd', linewidth=3, label="Portfolio Algorítmico")
+    
+    plt.ylabel('Drawdown (%)')
+    plt.xlabel('Fecha')
+    
+    # Limitar el eje Y
+    all_dds = [df['drawdown_pct'].min()]
+    for ticker in bench_tickers:
+        peak = df[ticker].cummax()
+        bench_dd = (df[ticker] - peak) / peak * 100
+        all_dds.append(bench_dd.min())
+        
+    plt.ylim(min(all_dds) * 1.1, 0)
+    plt.legend(loc="lower left", fontsize=12, ncol=2)
+    plt.tight_layout()
+    
+    output_path = os.path.join(output_dir, "drawdown_comparison.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    logger.info(f"Gráfico de drawdowns guardado exitosamente en: {output_path}")
+
 if __name__ == "__main__":
     plot_equity_vs_benchmarks()
+    plot_drawdown_comparison()
+

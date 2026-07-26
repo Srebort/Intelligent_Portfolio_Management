@@ -141,11 +141,11 @@ class MLPipeline:
         train_mask = dates_utc < split_ts
         test_mask = dates_utc >= split_ts
         
-        train_index = train_mask[train_mask].index
-        test_index = test_mask[test_mask].index
+        train_mask = (dates_utc < split_ts).values
+        test_mask = (dates_utc >= split_ts).values
         
-        X_train, X_test = self.features[train_index], self.features[test_index]
-        y_train, y_test = self.target.iloc[train_index], self.target.iloc[test_index]
+        X_train, X_test = self.features[train_mask], self.features[test_mask]
+        y_train, y_test = self.target.iloc[train_mask], self.target.iloc[test_mask]
         
         # Escalar SOLO ajustando en Train
         X_train_scaled = self.scaler.fit_transform(X_train)

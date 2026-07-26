@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any, Tuple
 import numpy as np
 import xgboost as xgb
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score, brier_score_loss
 
 logger = logging.getLogger("TradeSelectorXGB")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s — %(message)s")
@@ -73,14 +73,28 @@ class TradeSelectorXGB:
         Evalúa el rendimiento del modelo con un umbral dado.
         """
         preds = self.predict(X_test, threshold)
+        probs = self.predict_proba(X_test)
+        
+        cm = confusion_matrix(y_test, preds)
+        tn, fp, fn, tp = cm.ravel() if len(cm.ravel()) == 4 else (0,0,0,0)
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
         
         metrics = {
             "accuracy": accuracy_score(y_test, preds),
             "precision": precision_score(y_test, preds, zero_division=0),
             "recall": recall_score(y_test, preds, zero_division=0),
             "f1": f1_score(y_test, preds, zero_division=0),
-            "confusion_matrix": confusion_matrix(y_test, preds).tolist()
+            "specificity": specificity,
+            "confusion_matrix": cm.tolist()
         }
+        
+        if probs is not None and probs.shape[1] == 2:
+            metrics["roc_auc"] = roc_auc_score(y_test, probs[:, 1])
+            metrics["brier_score"] = brier_score_loss(y_test, probs[:, 1])
+        else:
+            metrics["roc_auc"] = 0.5
+            metrics["brier_score"] = 0.0
+            
         return metrics
 
 if __name__ == "__main__":
