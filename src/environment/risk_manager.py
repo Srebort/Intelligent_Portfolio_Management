@@ -12,7 +12,6 @@ Filosofía del módulo:
     confirmaciones tardías o de menor calidad.
 
 Asignación de Capital Máximo en Riesgo por Tier:
-    - Tier A* : 2.0% del capital total (Probabilidad Extrema)
     - Tier A  : 1.5% del capital total (Probabilidad Alta)
     - Tier B  : 1.0% del capital total (Probabilidad Media)
     - Tier C  : 0.5% del capital total (Probabilidad Baja)
@@ -53,10 +52,9 @@ class RiskManager:
         # El porcentaje representa la fracción máxima del capital total que
         # se puede perder si la operación alcanza el Stop Loss.
         self.tier_risk_allocation = {
-            "A*": 0.020,  # 2.0% del capital total
-            "A":  0.015,  # 1.5% del capital total
-            "B":  0.010,  # 1.0% del capital total
-            "C":  0.005,  # 0.5% del capital total
+            "A":  0.01,  # 1.0% del capital total
+            "B":  0.01,  # 1.0% del capital total
+            "C":  0.01,  # 1.0% del capital total
         }
 
     def calculate_trade_parameters(self, row: pd.Series) -> dict:
@@ -97,7 +95,7 @@ class RiskManager:
             return {}
 
         # 1. Stop Loss: mínimo de la vela - margen de volatilidad dinámica (0.5 * ATR)
-        stop_loss = minimo_local - (0.5 * atr)
+        stop_loss = minimo_local - (1.0 * atr)
 
         # Validar coherencia matemática del SL
         if stop_loss >= precio_entrada:
@@ -180,25 +178,25 @@ class RiskManager:
         sl = {}
 
         # SL1: ATR de la vela (siempre válido)
-        sl1 = low_vela - 0.5 * atr
+        sl1 = low_vela - 1.0 * atr
         if sl1 < precio_entrada:
             sl["SL1_ATR"] = round(sl1, 4)
 
         # SL2: Fractal de soporte previo
         if not np.isnan(fractal_low):
-            sl2 = fractal_low - 0.5 * atr
+            sl2 = fractal_low - 1.0 * atr
             if sl2 < precio_entrada:
                 sl["SL2_Fractal"] = round(sl2, 4)
 
         # SL3: SMA 50 (solo si está por debajo del precio)
         if not np.isnan(sma_50) and sma_50 < precio_entrada:
-            sl3 = sma_50 - 0.5 * atr
+            sl3 = sma_50 - 1.0 * atr
             if sl3 < precio_entrada:
                 sl["SL3_SMA50"] = round(sl3, 4)
 
         # SL4: SMA 200 (solo si está por debajo del precio)
         if not np.isnan(sma_200) and sma_200 < precio_entrada:
-            sl4 = sma_200 - 0.5 * atr
+            sl4 = sma_200 - 1.0 * atr
             if sl4 < precio_entrada:
                 sl["SL4_SMA200"] = round(sl4, 4)
 
@@ -218,7 +216,7 @@ class RiskManager:
     def get_take_profits(
         self,
         precio_entrada: float,
-        riesgo_por_accion: float,
+        sl_dict: dict,
         impulso: float,
     ) -> dict:
         """
@@ -234,7 +232,7 @@ class RiskManager:
 
         Args:
             precio_entrada     (float): Precio de cierre de la vela de entrada.
-            riesgo_por_accion  (float): Distancia en $ entre entrada y SL de referencia.
+            sl_dict            (dict): Diccionario de Stop Losses calculados previamente.
             impulso            (float): Distancia desde el fractal hasta el precio de entrada.
 
         Returns:
@@ -242,13 +240,16 @@ class RiskManager:
         """
         tp = {}
 
-        # TPs aritméticos (siempre válidos)
-        for multiplier, nombre in [
-            (2.0, "TP1_2R"),
-            (2.5, "TP2_25R"),
-            (3.0, "TP3_3R"),
-        ]:
-            tp[nombre] = round(precio_entrada + multiplier * riesgo_por_accion, 4)
+        # TPs aritméticos (dependen del SL)
+        for sl_name, sl_price in sl_dict.items():
+            riesgo = precio_entrada - sl_price
+            if riesgo > 0:
+                for multiplier, base_nombre in [
+                    (2.0, "TP1_2R"),
+                    (2.5, "TP2_25R"),
+                    (3.0, "TP3_3R"),
+                ]:
+                    tp[f"{base_nombre}_{sl_name}"] = round(precio_entrada + multiplier * riesgo, 4)
 
         # TPs Fibonacci (requieren impulso válido)
         if not np.isnan(impulso) and impulso > 0:

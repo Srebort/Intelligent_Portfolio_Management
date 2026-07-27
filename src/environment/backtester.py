@@ -60,6 +60,8 @@ class StrictBacktester:
         future_df: pd.DataFrame,
         sl_dict: dict,
         tp_dict: dict,
+        precio_entrada: float,
+        tier: str,
     ) -> dict:
         """
         Hace UNA pasada por las velas futuras y registra cuándo se toca
@@ -82,21 +84,39 @@ class StrictBacktester:
         # Registrar la primera vela en que se toca cada nivel
         sl_touch = {name: None for name in sl_dict}
         tp_touch = {name: None for name in tp_dict}
+        
+        be_activated = False
+        trade_be_hit = False
 
         for idx_vela, (_, row) in enumerate(future_df.iterrows()):
             candle_num = idx_vela + 1
 
-            # Evaluar SL primero (Regla del Peor Caso intravela)
+            # Evaluar SL primero con Regla del Peor Caso intravela
+            # Nota: usamos el estado de BE de la vela anterior para el inicio de esta
             for sl_name, sl_price in sl_dict.items():
-                if sl_touch[sl_name] is None and row["low"] <= sl_price:
-                    sl_touch[sl_name] = candle_num
+                if sl_touch[sl_name] is None:
+                    eff_sl = max(sl_price, precio_entrada) if be_activated else sl_price
+                    if row["low"] <= eff_sl:
+                        sl_touch[sl_name] = candle_num
+                        if be_activated and eff_sl == precio_entrada:
+                            trade_be_hit = True
 
             # Evaluar TP: solo se marca si en esa misma vela el SL NO fue tocado primero
             for tp_name, tp_price in tp_dict.items():
                 if tp_touch[tp_name] is None and row["high"] >= tp_price:
                     tp_touch[tp_name] = candle_num
 
-        # Registrar resultados binarios por nivel
+            # Activar BE: Tiers A, B y C al 1R (beneficio = riesgo inicial)
+            if not be_activated and tier in ["A", "B", "C"]:
+                # Tomamos SL1_ATR como referencia de riesgo
+                ref_sl = sl_dict.get("SL1_ATR", next(iter(sl_dict.values())))
+                riesgo = precio_entrada - ref_sl
+                if row["high"] >= precio_entrada + riesgo:
+                    be_activated = True
+
+        # Registrar resultados binarios y BE global
+        result["BE_Hit"] = 1 if trade_be_hit else 0
+        
         for sl_name, candle in sl_touch.items():
             result[f"{sl_name}_vela"] = candle
             result[f"{sl_name}_hit"]  = 1 if candle is not None else 0
@@ -110,11 +130,21 @@ class StrictBacktester:
         # Choque intravela: si ambos se tocan en la misma vela → Pérdida (Label=0)
         for sl_name, sl_candle in sl_touch.items():
             for tp_name, tp_candle in tp_touch.items():
+                is_r_based = tp_name.startswith("TP1_") or tp_name.startswith("TP2_") or tp_name.startswith("TP3_")
+                
+                if is_r_based:
+                    # Ignore crossover combinations between different SLs
+                    if not tp_name.endswith(f"_{sl_name}"):
+                        continue
+                    clean_tp_name = tp_name.replace(f"_{sl_name}", "")
+                else:
+                    clean_tp_name = tp_name
+                    
                 tp_gano = (
                     tp_candle is not None
                     and (sl_candle is None or tp_candle < sl_candle)
                 )
-                result[f"label_{sl_name}_{tp_name}"] = 1 if tp_gano else 0
+                result[f"label_{sl_name}_{clean_tp_name}"] = 1 if tp_gano else 0
 
         # Label principal: SL4_SMA200 + TP4_Fib100 (mayor Win Rate histórico)
         result["Label"] = result.get("label_SL4_SMA200_TP4_Fib100", 0)
@@ -170,7 +200,7 @@ class StrictBacktester:
                 precio_entrada, low_vela, atr, fractal_low, sma_50, sma_200, impulso
             )
             tp_dict = self.risk_manager.get_take_profits(
-                precio_entrada, riesgo_base, impulso
+                precio_entrada, sl_dict, impulso
             )
 
             if not sl_dict or not tp_dict:
@@ -185,7 +215,7 @@ class StrictBacktester:
                 continue
 
             # Simular todos los niveles en una sola pasada
-            sim = self._simulate_signal(future_df, sl_dict, tp_dict)
+            sim = self._simulate_signal(future_df, sl_dict, tp_dict, precio_entrada, row_signal.get("Tier", ""))
 
             # Construir fila del dataset: features originales + resultados
             record = row_signal.to_dict()
