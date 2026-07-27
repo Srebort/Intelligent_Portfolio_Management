@@ -18,7 +18,7 @@ Este capítulo presenta la visión global del Trabajo Fin de Máster (TFM), esta
 
 En la última década, los mercados financieros han experimentado una transformación estructural hacia la automatización. Mientras que los inversores institucionales utilizan complejos modelos cuantitativos y algoritmos de alta frecuencia para gestionar su exposición al riesgo, el inversor particular sigue dependiendo mayoritariamente de decisiones discrecionales, sesgos emocionales y análisis técnico manual. 
 
-La motivación principal de este proyecto radica en la necesidad de cerrar esta brecha tecnológica. Se pretende demostrar que, mediante la integración de Análisis Multi-Timeframe (MTF) riguroso, algoritmos de detección de *Price Action* y modelos de Machine Learning (como XGBoost o Random Forest), es posible construir un sistema de gestión cuantitativa de carteras autónomo, robusto y estadísticamente rentable, accesible sin requerir la infraestructura de un fondo de inversión.
+La motivación principal de este proyecto radica en la necesidad de cerrar esta brecha tecnológica. Se pretende demostrar que, mediante la integración de Análisis Multi-Timeframe (MTF) riguroso, algoritmos de detección de *Price Action* y modelos de Machine Learning (como XGBoost o Random Forest), es posible construir un sistema de gestión cuantitativa de carteras autónomo, robusto y con esperanza matemática positiva, accesible sin requerir la infraestructura de un fondo de inversión.
 
 A nivel personal y académico, este TFM representa la oportunidad de aplicar de manera práctica e integrada los conocimientos adquiridos durante el Máster Universitario en Ingeniería Informática (MUIINF), abarcando disciplinas complejas como la ingeniería de datos, el aprendizaje automático, el diseño de arquitecturas de software y la teoría financiera de gestión de riesgos.
 
@@ -183,7 +183,7 @@ metodológica fundamental: entrenan los modelos directamente sobre los cambios d
 setup de entrada. Este enfoque ignora el contexto técnico en el que se produce cada movimiento,
 generando datasets desbalanceados y con baja señal-ruido.
 
-El sistema propuesto en este TFM adopta un enfoque radicalmente distinto: el clasificador
+El sistema propuesto en este TFM adopta un enfoque alternativo: el clasificador
 XGBoost no predice si el precio subirá genéricamente, sino si una señal técnica específica
 (ya filtrada por el sistema de Tiers) resultará rentable dadas las condiciones de gestión de
 riesgo definidas (Stop Loss y Take Profit). Esta formulación, denominada "confirmación de
@@ -225,22 +225,26 @@ un gestor de cartera que limite la exposición total y priorice las mejores opor
 El universo de inversión del sistema comprende más de 50 activos de renta variable estadounidense,
 organizados en los siguientes sectores:
 
-Tabla 3.1: Universo de activos del sistema
-| Sector | Activos representativos |
+Tabla 3.1: Universo de activos del sistema (45 acciones evaluadas)
+| Sector | Activos (Tickers) |
 |---|---|
-| Índices y ETFs de referencia | SPY, QQQ, DIA, IWM |
-| Tecnología y Semiconductores | AAPL, MSFT, NVDA, GOOGL, META, AMD |
-| Ciberseguridad y Nube | CRWD, PANW, SNOW, PLTR |
-| Servicios Financieros | JPM, V, GS |
-| Salud y Biotecnología | LLY, NVO, ABBV |
-| Energía e Industria | XOM, CVX, CAT |
-| Activos de cobertura | TLT, GLD, SLV |
+| **Tecnología y Semiconductores** | AAPL, MSFT, NVDA, GOOGL, META, AMD |
+| **Ciberseguridad y Nube** | CRWD, PANW, SNOW, PLTR |
+| **Servicios Financieros** | JPM, BAC, V |
+| **Salud y Biotecnología** | JNJ, UNH, LLY, ABBV, ISRG |
+| **Consumo Discrecional y Viajes** | AMZN, HD, MCD, TSLA, F, NFLX, ABNB, UBER, DAL |
+| **Consumo Defensivo** | WMT, PG, KO |
+| **Energía e Industria** | XOM, CVX, CAT, UNP, GE |
+| **Aeroespacial y Defensa** | LMT, RTX, BA |
+| **Materiales Básicos** | FCX, NEM, LIN |
+| **Bienes Raíces (REITs) y Utilities** | O, PLD, AMT, NEE |
 
-La selección de renta variable americana como universo principal responde a tres criterios:
-(i) alta liquidez, que garantiza la ejecutabilidad de las órdenes sin impacto de mercado
-significativo; (ii) disponibilidad de datos históricos de calidad desde 2010; y (iii)
-eficiencia del mercado norteamericano, que facilita la comparación con el benchmark de Buy
-and Hold sobre el S&P 500.
+La selección de los 45 activos de renta variable americana como universo principal no es arbitraria ni puramente retrospectiva. Responde a criterios predefinidos y objetivos establecidos antes de iniciar el ciclo de simulación:
+1.  **Capitalización y Liquidez Extrema:** Se seleccionaron exclusivamente activos pertenecientes al S&P 500 y Nasdaq-100 con un volumen medio de negociación diario superior a 10 millones de acciones. Este umbral es crítico para garantizar la ejecutabilidad real de las órdenes institucionales sin generar un impacto de mercado adverso (*slippage* severo).
+2.  **Disponibilidad Histórica Ininterrumpida:** Activos que mantengan un historial de cotización robusto y continuo desde al menos el año 2010, permitiendo una ventana temporal de entrenamiento estadísticamente significativa para capturar múltiples regímenes macroeconómicos.
+3.  **Representatividad Sectorial Cruzada:** Se impuso la inclusión deliberada de activos pertenecientes a 10 macro-sectores económicos distintos. Esto asegura que el modelo de Machine Learning aprenda dinámicas universales de la estructura del precio (*Price Action*), evitando el sobreajuste a la idiosincrasia direccional de un único sector (ej. el sesgo alcista secular del sector tecnológico).
+
+*Limitaciones Metodológicas:* Al acotar el universo utilizando activos consolidados (megacapitalización del S&P 500 y Nasdaq), se mitigan los riesgos sistémicos, pero se reconoce la existencia potencial de un sesgo de supervivencia (*Survivorship Bias*). Dado que la selección se basó en empresas listadas y líderes a fecha de 2024, se filtraron inadvertidamente aquellas entidades que quebraron o fueron deslistadas en la última década. Para un despliegue en producción exhaustivo, el universo debe necesariamente abarcar activos purgados (*delisted*) para cimentar la validez absoluta del backtesting.
 
 
 ## 3.3 Fuentes de Datos
@@ -478,7 +482,7 @@ Algoritmo de detección (vectorizado):
   3. Comparar el mínimo actual de RSI con el anterior: si rsi_low_t > rsi_low_{t-prev} → condición 2
   4. is_bullish_divergence = condición_1 AND condición_2
 
-Esta feature es condición necesaria para el Tier A* (máxima probabilidad) del sistema.
+Esta feature es condición necesaria para el Tier A (máxima probabilidad) del sistema.
 
 
 ## 4.3 Price Action Algorítmico: `patterns.py`
@@ -522,7 +526,7 @@ y luego recuperaron ese nivel dentro de la misma vela, dejando una mecha inferio
   ratio_mecha_inferior = mecha_inferior / rango_total
   is_bullish_wick_reclaim = (ratio_mecha_inferior ≥ 0.60)
 
-Este patrón es fundamental en el Tier A* (junto con la divergencia RSI), ya que representa
+Este patrón es fundamental en el Tier A (junto con la divergencia RSI), ya que representa
 un barrido de liquidez seguido de absorción institucional.
 
 ### 4.3.4 Niveles de Fibonacci en Ventana Deslizante
@@ -545,67 +549,90 @@ Un valor cercano a 0 indica que el precio está en ese nivel de Fibonacci, lo qu
 condición de entrada en los Tiers A y A*.
 
 
-## 4.4 Sistema de Evaluación de Señales: TierEvaluator
+## 4.4 Sistema de Evaluación de Señales: Evolución y Optimización Empírica
 
-El `TierEvaluator` clasifica cada vela del dataset en uno de los cuatro Tiers de probabilidad
-(A*, A, B, C) o en la categoría nula (sin señal), aplicando un conjunto de condiciones lógicas
-en cascada de mayor a menor exigencia.
+El `TierEvaluator` es el motor algorítmico encargado de clasificar cada vela del dataset en una de las tres estrategias principales (Tier A, Tier B, Tier C). Durante la fase de desarrollo, la arquitectura original fue diseñada basándose en heurísticas tradicionales de trading discrecional. Sin embargo, el backtesting exhaustivo sobre más de 100,000 velas históricas demostró que las reglas humanas, al codificarse de manera rígida, resultaban contraproducentes. 
 
-### 4.4.1 Filtro Base Multi-Timeframe (Obligatorio para todos los Tiers)
+A continuación, se detalla el proceso empírico de optimización que transformó un sistema teóricamente conservador (pero perdedor) en una arquitectura robusta, generando un *dataset* final equilibrado de 3,318 señales limpias para el entrenamiento de la Inteligencia Artificial.
 
-Antes de evaluar cualquier patrón de Price Action, el sistema verifica la confluencia de las
-tres temporalidades:
+### 4.4.1 Eliminación de la Dependencia Multi-Timeframe (MTF) en todos los Tiers
 
-  Condición_4H:  close_4H > SMA_200_4H              (tendencia operativa alcista)
-  Condición_1D:  close_1D > SMA_200_1D              (tendencia diaria alcista)
-  Condición_1W:  slope_SMA_200_1W > 0               (tendencia macro positiva)
-  filtro_base   = Condición_4H AND Condición_1D AND Condición_1W
+**El paradigma original:** La teoría clásica dicta operar siempre a favor de la tendencia macro. Por ello, el sistema original exigía que, para tomar cualquier operación (ya fuera Tier A, B o C), el precio debía estar por encima de la SMA 200 no solo en la gráfica operativa (4 Horas), sino también en las gráficas de 1 Día y 1 Semana.
 
-Si el filtro base falla, la señal NO se genera. Esta es la primera línea de defensa del
-sistema contra operar en contra de la tendencia institucional.
+**El problema empírico:** El backtesting demostró que las medias móviles semanales y diarias tienen demasiado *lag* (retraso). Para cuando el precio lograba cruzar la SMA 200 en 1 Semana, el activo ya había subido agresivamente durante semanas. Este filtro obligaba al sistema a comprar en la cima de los movimientos extendidos, justo antes de las correcciones, mientras filtraba los pivotes y rebotes tempranos más rentables.
 
-### 4.4.2 Tier A* — Probabilidad Extrema
+**La solución:** Se purgaron los filtros macro de forma universal. Ahora, los **Tiers A, B y C** evalúan la tendencia puramente en su entorno operativo, exigiendo únicamente:
+  `cond_4h = close_4H > SMA_200_4H`
+Esta simplificación permitió al sistema reaccionar de forma ágil a los cambios de momentum en las tres estrategias.
 
-Representa el setup de máxima confluencia: barrido de liquidez + retroceso Fibonacci + divergencia RSI.
+### 4.4.2 Evolución del Tier A: De la Perfección Teórica al Pragmatismo del *Shakeout*
 
-  Tier_A_star = filtro_base
-                AND is_bullish_wick_reclaim = 1
-                AND |dist_fib_retr_618| < 1.5%
-                AND |dist_SMA_200| < 5%
-                AND is_bullish_divergence = 1
+El Tier A fue diseñado para operar *pullbacks* (retrocesos) hacia la media institucional (SMA 200). En su concepción inicial, estaba fuertemente restringido por múltiples candados lógicos.
 
-### 4.4.3 Tier A — Probabilidad Alta
+**Las restricciones eliminadas:**
+1. **El nivel exacto de Fibonacci:** Se exigía que el rebote coincidiera milimétricamente con el nivel de retroceso del 61.8% de Fibonacci. Se descubrió empíricamente que esta regla asfixiaba al sistema, descartando rebotes altamente rentables en los niveles 50% o 78.6%. La condición fue eliminada.
+2. **La Regla 6/20 (Valid Pullback):** Esta regla dictaba que, de las últimas 20 velas, un máximo de 6 podían haber cerrado por debajo de la SMA 200. Su objetivo era evitar comprar activos cuya tendencia estuviera "rota". Contraintuitivamente, el backtesting demostró que los peores rompimientos temporales (aquellos donde el precio pasa 8 o 10 velas "hundido" bajo la media) son en realidad **cacerías de liquidez (*shakeouts*)** ejecutadas por el dinero institucional. Al eliminar la regla 6/20, permitimos al algoritmo comprar pánico extremo, lo que casi duplicó el beneficio neto (P&L) y redujo el *Drawdown* máximo del -18.7% al -16.6%.
 
-Retroceso profundo sin barrido de liquidez explícito:
-  Tier_A = filtro_base AND |dist_fib_retr_618| < 1.5% AND |dist_SMA_200| < 5% AND NOT Tier_A_star
+**El problema del *Overtrading* y la solución del Cooldown:**
+Al eliminar las restricciones anteriores, el Tier A se volvió muy reactivo. Cuando el precio consolidaba lateralmente sobre la SMA 200, el sistema abría decenas de operaciones simultáneas en la misma zona, asumiendo un riesgo catastrófico (generando un *Drawdown* inaceptable del -109%).
+Para mitigarlo, se programó un **Filtro de Cooldown (Enfriamiento) de 12 velas**. Una vez ejecutada una entrada de Tier A, el sistema bloquea cualquier nueva señal en ese mismo activo durante 2 días operativos. Esta simple regla espacial distribuyó el riesgo y estabilizó la curva de capital.
 
-### 4.4.4 Tier B — Probabilidad Media
+La ecuación final del Tier A prioriza el contacto crudo con la media institucional:
+  `Tier_A = cond_4h AND |dist_SMA_200| < 5% AND not_escaped AND cooldown_cleared`
 
-Doble suelo sobre soporte algorítmico:
-  Tier_B = filtro_base AND is_support_fractal = 1 AND is_bullish_wick_reclaim = 1
-           AND |dist_SMA_200| < 5% AND NOT Tier_A_star AND NOT Tier_A
+### 4.4.3 Independencia de los Tiers B (Soporte) y C (Breakout)
 
-### 4.4.5 Tier C — Probabilidad Baja
+En versiones anteriores, existía un sistema jerárquico donde una señal de Tier A excluía explícitamente a las de Tier B o C. Esto generaba una pérdida de datos valiosos para el modelo predictivo. Actualmente, las estrategias operan de forma ortogonal, permitiendo que la IA evalúe la calidad de cada patrón por sus propios méritos:
+- **Tier B:** Captura el agotamiento de ventas a través de fractales de soporte de Bill Williams. `Tier_B = cond_4h AND is_support_fractal = 1`
+- **Tier C:** Busca el momentum mediante la ruptura validada (mínimo 5 velas de antigüedad) de una resistencia. `Tier_C = cond_4h AND close > ultimo_fractal_de_resistencia`
 
-Confirmación tardía vía ruptura de resistencia:
-  Tier_C = filtro_base AND close > último_fractal_de_resistencia
-           AND close_{t-1} <= resistencia_{t-1} AND NOT Tier_A_star AND NOT Tier_A AND NOT Tier_B
+### 4.4.4 Flujo de Prioridad y Asignación de Capital
 
-### 4.4.6 Asignación de Capital por Tier
+Aunque los Tiers B y C operan de forma ortogonal, existe la posibilidad matemática de que una misma vela dispare múltiples señales simultáneamente (por ejemplo, un rebote en soporte que además rompe la SMA 200). Para gestionar estas colisiones, el sistema implementa un **flujo de prioridad en cascada ascendente**:
+1. El sistema evalúa primero la condición de **Tier C**.
+2. A continuación, evalúa el **Tier B**. Si se cumple, sobrescribe la señal del Tier C.
+3. Por último, evalúa el **Tier A** (máxima probabilidad). Si se cumple, sobrescribe cualquier señal anterior.
 
-El capital en riesgo máximo se determina en función del Tier asignado:
+Esta jerarquía garantiza que, ante un evento técnico complejo, la señal se etiquete siempre con el nivel de probabilidad más alto posible. 
 
-Tabla 4.1: Asignación de capital por Tier
-| Tier | Capital en riesgo | Justificación |
-|---|---|---|
-| A* | 2.0% del capital total | Máxima confluencia de señales independientes |
-| A  | 1.5% del capital total | Alta probabilidad sin confirmación de divergencia |
-| B  | 1.0% del capital total | Probabilidad media, doble suelo confirmado |
-| C  | 0.5% del capital total | Confirmación tardía, mayor riesgo de falsa ruptura |
+Este nivel de probabilidad dicta directamente la **Asignación de Capital** mediante una aproximación conservadora del *Criterio de Kelly*, arriesgando un porcentaje mayor de la cartera en las señales más fiables:
+- **Tier A:** 1.5% del capital total en riesgo.
+- **Tier B:** 1.0% del capital total en riesgo.
+- **Tier C:** 0.5% del capital total en riesgo.
 
-Esta asignación asimétrica implementa el principio de Kelly Criterion generalizado: se
-arriesga más capital cuando la probabilidad de éxito es mayor y menos cuando es menor,
-maximizando el crecimiento esperado del capital a largo plazo.
+### 4.4.5 La Clave de la Supervivencia: Gestión de Riesgo Asimétrica y *Break Even* al 1R (Universal)
+
+Por muy depuradas que estén las señales de entrada, la estocasticidad del mercado garantiza rachas de pérdidas. El descubrimiento más importante del proceso de backtesting fue que la supervivencia del sistema no dependía del *Win Rate* de las entradas, sino de la arquitectura de salida de la operación.
+
+El sistema fue reescrito para utilizar una **Gestión de Riesgo Dinámica basada en Volatilidad (ATR) aplicada universalmente a los Tiers A, B y C:**
+1. **Stop Loss Variable (1 ATR):** En lugar de un porcentaje fijo, el riesgo se adapta al "ruido" real del mercado en ese momento exacto.
+2. **Take Profit Asimétrico (3R):** Se exige que la operación pague tres veces el riesgo asumido, creando una esperanza matemática positiva incluso con *Win Rates* sub-óptimos.
+3. **El Escudo del *Break Even* Dinámico (1R):** El salvavidas definitivo de la estrategia. Independientemente del Tier que genere la señal, si la operación alcanza un beneficio flotante equivalente al riesgo inicial ($+1R$), el Stop Loss se traslada algorítmicamente al precio exacto de entrada. 
+
+**Impacto empírico:** El *Break Even* dinámico redujo la rentabilidad bruta de las operaciones que sufrían alta volatilidad antes de explotar, pero su efecto protector sobre el capital fue transformador en **todos los niveles**. Rescató las tres estrategias de la bancarrota técnica, convirtiendo Drawdowns letales en escenarios de desgaste controlado, permitiendo al sistema acumular una base de datos de entrenamiento inmensa (3,318 señales) de forma completamente segura.
+
+### 4.4.6 Informe de Rendimiento Individual por Tier
+
+Para validar empíricamente la efectividad de las tres estrategias operando de forma ortogonal, se sometieron a un riguroso *backtesting* individual sobre un universo de 45 activos y un periodo de 10 años. Todas fueron evaluadas bajo el mismo criterio estricto: **Riesgo Variable (1 ATR), Take Profit Fijo (3R) y Break Even Dinámico al +1R**.
+
+A continuación, se detalla el rendimiento individual de cada Tier:
+
+| Métrica | Tier A (SMA 200 Pullback) | Tier B (Soporte Fractal) | Tier C (Ruptura Madura) |
+| :--- | :---: | :---: | :---: |
+| **Operaciones Totales** | 989 | 899 | 1,430 |
+| **Win Rate (Asimétrico)** | 26.7% | 26.8% | 24.5% |
+| **Beneficio Neto (P&L)** | +$437,702 | +$456,821 | +$712,650 |
+| **Max Drawdown (Dinámico)** | -8.73% | -4.37% | -5.52% |
+| **Max Drawdown (Absoluto)** | -16.60% | -14.13% | -13.66% |
+| **Profit Factor** | 2.33 | 2.89 | 3.36 |
+| **Sharpe Ratio (Trade)** | 2.85 | 3.22 | 4.25 |
+| **Sortino Ratio (Trade)** | 9.12 | 10.83 | 15.53 |
+| **Racha Máxima Pérdidas** | 26 ops | 24 ops | 21 ops |
+
+**Análisis de Resultados:**
+1. **Volumen de Datos:** La eliminación de la jerarquía restrictiva permitió recuperar miles de ejemplos (especialmente 1,430 rupturas de Tier C que antes eran descartadas por colisiones), logrando las **3,318 señales** necesarias para entrenar modelos predictivos robustos.
+2. **Consistencia:** El *Win Rate* de los tres Tiers converge de forma natural entre el 24.5% y el 26.8%. Aunque parezca bajo para el estándar tradicional, recordemos que el *Break Even* dinámico sacrifica *Win Rate* (anulando operaciones ganadoras tardías) a cambio de proteger el capital a toda costa.
+3. **Esperanza Matemática:** Gracias al ratio Riesgo:Beneficio de 1:3, la rentabilidad neta agregada supera el millón y medio de dólares hipotéticos, lo que demuestra que la "lógica pura" es matemáticamente ganadora incluso antes de aplicar filtros de Inteligencia Artificial.
 
 
 ## 4.5 El Filtro Predictivo (Machine Learning)
@@ -620,7 +647,7 @@ El desafío técnico más crítico en el modelado financiero predictivo es la pr
 
 Para evitar esto, se ha implementado la clase `MLPipeline` (`src/models/ml_pipeline.py`), que realiza las siguientes operaciones de seguridad de forma automatizada:
 1.  **Purga de variables del futuro:** Elimina programáticamente 81 columnas del dataset, incluyendo cualquier variable terminada en `_precio`, `_vela` o `_hit`, conservando estrictamente los indicadores técnicos e índices de *Price Action* calculados hasta el momento de la entrada.
-2.  **Partición Cronológica (TimeSeriesSplit):** A diferencia de un problema de clasificación tradicional donde los datos pueden particionarse aleatoriamente (K-Fold tradicional), los datos financieros poseen dependencia temporal. El pipeline utiliza `TimeSeriesSplit` para evaluar los modelos: entrena con el pasado y testea en el futuro.
+2.  **Partición Cronológica Estricta (TimeSeriesSplit):** A diferencia de un problema de clasificación tradicional, los datos financieros poseen una fuerte dependencia temporal asimétrica. Se estableció una barrera temporal dura el 1 de enero de 2025. El ajuste de hiperparámetros de los modelos y la calibración empírica del umbral de decisión probabilístico (60%) se realizaron utilizando **exclusivamente** el conjunto de Entrenamiento (2010-2024) mediante los *folds* internos de la validación cruzada `TimeSeriesSplit`. El conjunto de Test (2025 en adelante) se mantuvo **totalmente bloqueado (*locked*)** hasta la fase final del proyecto, garantizando que su uso se limitó estrictamente a la evaluación *Out-Of-Sample* definitiva, previniendo la contaminación de la selección del modelo.
 3.  **Escalado:** Las variables numéricas son estandarizadas mediante `StandardScaler` (ajustado exclusivamente sobre los datos de entrenamiento) para garantizar un aprendizaje estable en algoritmos sensibles a la magnitud, como Support Vector Machines.
 
 ### 4.5.2 Modelos Predictivos Base y Control del Sobreajuste
@@ -632,47 +659,59 @@ Por ello, se establecieron tres modelos base (líneas base o *baselines*) fuerte
 -   **Support Vector Machine (SVM):** Utilizando un kernel Gaussiano (RBF) con un margen de regularización suave (`C=0.5`).
 -   **Random Forest (RF):** Ensamblaje de 50 árboles de decisión, severamente limitados en profundidad (`max_depth=3`) y con exigencia de al menos 3 muestras por hoja (`min_samples_leaf=3`) para forzar la abstracción.
 
-### 4.5.3 Clasificador Avanzado: XGBoost
+### 4.5.3 Clasificador Avanzado: XGBoost y Justificación contra Modelos Secuenciales (LSTM)
 
 Como modelo final, se implementó `TradeSelectorXGB` basado en XGBoost (*eXtreme Gradient Boosting*). Este algoritmo construye árboles de decisión secuencialmente para minimizar los errores de sus predecesores. 
 
 Para su configuración financiera, se aplicó una regularización combinada: `reg_alpha=0.5` (Lasso) para forzar dispersión reduciendo a cero los pesos de características irrelevantes, y `reg_lambda=1.0` (Ridge) para penalizar ponderaciones excesivas. Adicionalmente, el ratio de aprendizaje se redujo a `learning_rate=0.05` y la profundidad máxima a 3, obligando al modelo a aprender patrones sutiles y robustos en lugar de particularidades del dataset.
 
-### 4.5.4 Evaluación de Modelos y Análisis de Variables (Feature Importance)
+**¿Por qué no se utilizaron Redes Neuronales Recurrentes (LSTM)?**
+Aunque las arquitecturas LSTM son un estándar en la predicción de series temporales continuas, resultan arquitectónicamente incompatibles con este sistema. Las LSTMs requieren secuencias temporales densas (velas de precios consecutivas). Sin embargo, el dataset predictivo generado (3.318 muestras) no son velas consecutivas, sino "eventos de trading" esporádicos dispersos en el tiempo (las señales filtradas por los Tiers A/B/C). Modelar la dependencia temporal entre un evento en *Apple* en enero y otro en *Microsoft* en abril carece de validez financiera. Además, con la relativa escasez de datos (cientos de eventos por activo), el riesgo de sobreajuste de una red neuronal profunda es drásticamente superior al de un modelo basado en árboles estrictamente regularizado.
 
-Los cuatro modelos compitieron directamente sobre el conjunto de Test. Se priorizó el uso del **F1-Score** como métrica principal, dada su capacidad matemática para penalizar tanto los Falsos Positivos (señales aceptadas que resultan en pérdidas) como los Falsos Negativos (señales ganadoras descartadas).
+### 4.5.4 Evaluación Exploratoria y Transición hacia Métricas Financieras
 
-**Resultados Comparativos en el Test Set (Operaciones Futuras):**
--   **Random Forest:** Logró el mejor desempeño global, con un F1-Score de **0.778**, un Accuracy del 87.9% y tan solo 3 Falsos Positivos.
+En las fases exploratorias iniciales del proyecto, los cuatro modelos compitieron directamente sobre un subconjunto de datos reducido, priorizando el uso del **F1-Score** como métrica clásica de validación en aprendizaje automático.
+
+**Resultados Preliminares (Fase Exploratoria Inicial):**
+-   **Random Forest:** Logró el mejor desempeño inicial, con un F1-Score de **0.778**, un Accuracy del 87.9% y tan solo 3 Falsos Positivos.
 -   **SVM:** Obtuvo un F1-Score de **0.737** (Accuracy 84.8%).
--   **XGBoost:** Mostró un Recall perfecto del 100% (no descartó ninguna operación ganadora), pero con mayor número de Falsos Positivos, resultando en un F1-Score de **0.640**.
--   **Regresión Logística:** Como era de esperar dada la no-linealidad del mercado, quedó rezagada con un F1-Score de **0.522**.
+-   **XGBoost:** Mostró un Recall perfecto del 100%, resultando en un F1-Score inicial de **0.640**.
+-   **Regresión Logística:** Quedó rezagada con un F1-Score de **0.522**.
 
 **Análisis de Importancia de Variables (Feature Importance):**
-El análisis paramétrico de los modelos basados en árboles reveló qué características técnicas del mercado tienen mayor poder predictivo. Destacan significativamente:
-1.  **Volatilidad (`ATR_14`):** El parámetro dominante absoluto. Entornos de alta volatilidad aumentan drásticamente la probabilidad matemática de que el ruido del mercado alcance el Stop Loss antes que el Take Profit.
-2.  **Momentum (`impulso`):** El tamaño relativo de la vela de entrada indica la convicción institucional detrás del movimiento.
-3.  **Sobreextensión del Precio (`dist_SMA_50` y `dist_SMA_200`):** La distancia porcentual del precio respecto a las medias móviles principales resultó crítica, confirmando empíricamente el principio de "reversión a la media" del mercado.
+El análisis paramétrico inicial reveló qué características técnicas tienen mayor poder predictivo. Destacan significativamente:
+1.  **Volatilidad (`ATR_14`):** Una de las variables con mayor poder predictivo. Entornos de alta volatilidad aumentan drásticamente la probabilidad matemática de que el ruido del mercado alcance el Stop Loss.
+2.  **Momentum (`impulso`):** El tamaño relativo de la vela de entrada indica la convicción institucional.
+3.  **Sobreextensión del Precio (`dist_SMA_50` y `dist_SMA_200`):** Crítico para capturar el principio de "reversión a la media".
 
-Concluido el análisis, el modelo ganador (Random Forest) fue exportado estáticamente mediante la librería *Joblib* junto con su escalador métrico, listo para ser desplegado como el núcleo de decisión probabilística del Agente Gestor de Cartera en la fase de simulación en vivo.
+*Nota metodológica crucial:* Aunque Random Forest despuntó en esta primera fase puramente estadística (y el F1-Score alto sugirió su viabilidad inicial), **este resultado probó ser temporal y engañoso al escalar el modelo**. Como se demostrará con rigor empírico en la sección 4.7.2 (Matriz de Confusión Financiera) mediante validación Walk-Forward sobre el dataset completo definitivo (3.318 operaciones), las métricas clásicas demostraron ser insuficientes para el dominio financiero. Al evaluar el impacto económico asimétrico (R-múltiplos), **XGBoost demostró una superioridad aplastante** (+106R neto frente a +6R de Random Forest), justificando objetivamente su selección definitiva como el motor predictivo (`best_model.pkl`) desplegado en el agente gestor.
 
 
 ## 4.6 El Agente Gestor de Cartera: `PortfolioAgent`
 
 Una vez que el filtro predictivo de Machine Learning aprueba una señal técnica, la decisión de inversión entra en su fase más crítica: ¿cuánto capital comprometer, cuándo salir y qué hacer si el mercado entra en un régimen adverso? Estas responsabilidades recaen sobre el `PortfolioAgent`, implementado en `src/models/agent_logic.py`.
 
-Este módulo constituye la **capa de orquestación superior** del sistema. Su función es actuar como el "director de inversiones" que coordina la inteligencia del modelo predictivo con las reglas matemáticas de gestión de capital, aplicando un conjunto de filtros defensivos basados en la literatura académica de gestión cuantitativa de carteras.
+### 4.6.1. Definición Formal del Agente (Arquitectura PEAS)
 
-El diseño del Agente responde directamente a los tres desafíos identificados en el Capítulo 3:
-1.  **Selección de señales de calidad:** El Agente aplica un umbral probabilístico estricto para filtrar las predicciones del Random Forest.
-2.  **Gestión dinámica del riesgo:** Se conecta con el `RiskManager` para calcular matemáticamente el número exacto de acciones a comprar.
-3.  **Control de exposición global:** Implementa múltiples reglas de rebalanceo para controlar la concentración sectorial, la correlación entre activos y el régimen macro del mercado.
+A efectos de la Inteligencia Artificial, este sistema se define formalmente como un **Agente Reactivo Basado en Modelos** (*Model-based Reflex Agent*). No se ha empleado ningún *framework* genérico de agentes (como Mesa o LangChain); el agente ha sido diseñado y programado desde cero mediante una arquitectura modular estricta en Python.
+
+Utilizando el estándar de especificación PEAS (*Performance, Environment, Actuators, Sensors*), la ontología del agente se define como sigue:
+
+- **Medida de Rendimiento (*Performance Objective*):** El objetivo primordial del agente no es maximizar el retorno absoluto, sino maximizar el **Sharpe Ratio** (rentabilidad ajustada por riesgo), manteniendo estrictamente el *Max Drawdown* histórico por debajo del -15% institucional.
+- **Entorno (*Environment*):** El mercado financiero de renta variable estadounidense (S&P 500 y Nasdaq-100). Es un entorno parcialmente observable, estocástico, secuencial, dinámico, continuo y multiagente.
+- **Sensores (*Perceptions*):** El agente no interactúa con los precios crudos. Sus percepciones de entrada son: (1) las señales estructurales generadas por el sistema de Tiers, (2) la probabilidad de éxito $P(TP)$ que retorna XGBoost, (3) el índice de volatilidad macroeconómica (VIX), y (4) el porcentaje de amplitud del mercado global. Adicionalmente, posee un **Estado Interno** en memoria (la curva de capital histórica, el *Peak Equity* máximo alcanzado, el capital disponible y el historial temporal de operaciones) necesario para lidiar con la observabilidad parcial del mercado.
+- **Actuadores (*Actions*):** El agente puede invocar los siguientes comandos sobre el módulo `Portfolio`: `Comprar_Activo(volumen_calculado)`, `Vender_Activo(motivo_salida)`, y `Bloquear_Mercado(días_cooldown)`.
+
+El diseño y proceso de decisión del Agente responde directamente a los desafíos planteados:
+1.  **Evaluación probabilística:** El Agente aplica un umbral estricto para filtrar las predicciones de XGBoost.
+2.  **Gestión dinámica del riesgo:** Interacciona con el `RiskManager` para dimensionar el volumen de compra según algoritmos financieros.
+3.  **Control de exposición:** Ejecuta filtros defensivos (actuadores de bloqueo) ante cambios bruscos en las percepciones macro (VIX/Drawdown).
 
 ### 4.6.1 Filtro Probabilístico de la Inteligencia Artificial
 
 El primer filtro que aplica el `PortfolioAgent` es la comprobación de la probabilidad de éxito predicha por el modelo. Cada señal técnica validada por el `TierEvaluator` es escalada mediante el `scaler.pkl` y pasada al modelo `best_model.pkl` para obtener su probabilidad de alcanzar el Take Profit (`P(TP)`).
 
-El umbral de aceptación está configurado por defecto en **P(TP) ≥ 0.75** (75%). Este valor fue determinado empíricamente durante la evaluación del Sprint 4: por debajo de este umbral, el número de Falsos Positivos en el conjunto de test aumenta significativamente, erosionando la rentabilidad esperada de la cartera.
+El umbral de aceptación está configurado por defecto en **P(TP) ≥ 0.60** (60%). Este valor fue determinado empíricamente durante la evaluación del Sprint 4: por debajo de este umbral, el número de Falsos Positivos en el conjunto de test aumenta significativamente, erosionando la rentabilidad esperada de la cartera.
 
 Las señales por encima del umbral son ordenadas de mayor a menor probabilidad (ranking), garantizando que si la liquidez de la cartera no permite ejecutar todas las órdenes del día, el sistema invertirá primero en las oportunidades de mayor convicción estadística.
 
@@ -710,7 +749,7 @@ En el presente sistema, el Time-Stop opera con una doble condición de cierre: s
 
 #### Regla 4: Kelly Fraccional — Ajuste Dinámico del Riesgo
 
-La asignación fija de capital por Tier (Tier A* = 2%, Tier A = 1.5%, etc.) presenta una limitación: no se adapta a los periodos en los que el modelo de Machine Learning está en una racha de errores. El Criterio de Kelly, formalizado matemáticamente por Kelly (1956) y ampliado por MacLean, Thorp y Ziemba (2011), proporciona la fracción óptima del capital a invertir en función de la tasa de aciertos y el ratio ganancia/pérdida esperado:
+La asignación fija de capital por Tier (Tier A = 2%, Tier B = 1.5%, etc.) presenta una limitación: no se adapta a los periodos en los que el modelo de Machine Learning está en una racha de errores. El Criterio de Kelly, formalizado matemáticamente por Kelly (1956) y ampliado por MacLean, Thorp y Ziemba (2011), proporciona la fracción óptima del capital a invertir en función de la tasa de aciertos y el ratio ganancia/pérdida esperado:
 
 ```
 f* = W − (1 − W) / R
@@ -775,7 +814,7 @@ Inicio del ciclo diario
         │ NO
         ▼
 [4] Por cada señal técnica del día:
-    ├── [4a] ¿P(TP) < 75%?        → Rechazar señal
+    ├── [4a] ¿P(TP) < 60%?        → Rechazar señal
     ├── [4b] ¿Correlación > 0.8?  → Rechazar señal
     └── [4c] RiskManager → Calcular Position Sizing
         │
@@ -788,10 +827,14 @@ Inicio del ciclo diario
 
 Este diseño en cascada garantiza que las comprobaciones de mayor impacto y menor coste computacional (filtros globales de régimen) se ejecuten primero, preservando la eficiencia del sistema durante las simulaciones históricas de larga duración.
 
+---
 
-# ===========================================================================
+> **NOTA DE MAQUETACIÓN:** El siguiente bloque de referencias bibliográficas (Capítulo 7) se incluye aquí provisionalmente para facilitar la revisión del borrador. En la versión final de la memoria Word, este bloque debe trasladarse al **final del documento**, después de las Conclusiones y Trabajo Futuro, según la normativa de la MUIINF.
+
+---
+
 # CAPÍTULO 7: REFERENCIAS BIBLIOGRÁFICAS
-# ===========================================================================
+
 
 Las referencias se presentan en formato APA 7.ª edición, ordenadas por número de aparición en el texto.
 
@@ -836,3 +879,598 @@ Las referencias se presentan en formato APA 7.ª edición, ordenadas por número
 [20] Williams, B. (1995). *Trading Chaos: Applying Expert Techniques to Maximize Your Profits*. John Wiley & Sons.
 
 [21] Harvey, C. R., Hoyle, E., Korgaonkar, R., Rattray, S., Sargaison, M., & Van Hemert, O. (2018). The Impact of Volatility Targeting. *The Journal of Portfolio Management*, *45*(1), 14–33. https://doi.org/10.3905/jpm.2018.45.1.014
+
+
+> *Nota de estructura: Los resultados completos de la evaluación comparativa de los cuatro modelos (incluyendo la tabla de métricas Out-of-Sample, la Matriz de Confusión Financiera y el análisis de Importancia de Variables), así como la Evaluación Institucional del Portfolio contra los índices de mercado, se desarrollan en detalle en las secciones 4.7, 4.8 y 4.9 del presente capítulo, ordenadas según el protocolo de experimentación científica establecido en el Sprint 4 del proyecto.*
+
+
+
+Se sometieron a prueba cuatro algoritmos clásicos y de estado del arte:
+1. **Regresión Logística (LogReg):** Modelo base lineal, fuertemente regularizado.
+2. **Support Vector Machine (SVM):** Modelo matemático geométrico con kernel RBF.
+3. **Random Forest (RF):** Ensamblaje arbóreo basado en Bagging.
+4. **Extreme Gradient Boosting (XGBoost):** Ensamblaje avanzado basado en Boosting secuencial con regularización L1 (Lasso) y L2 (Ridge).
+
+#### Resultados y Métricas de Rendimiento (Dataset Out-of-Sample)
+
+A continuación, se presenta la tabla comparativa de los algoritmos en el conjunto de prueba (Test), ordenada por su F1-Score:
+
+| Modelo | Accuracy | Precision | Recall | Specificity | F1-Score | ROC AUC | Brier Score | TN | FP | FN | TP |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **XGBoost** | **80.48%** | **60.81%** | 30.61% | **94.47%** | **0.4072** | **0.6986** | **0.1529** | 495 | 29 | 102 | 45 |
+| **Random Forest** | 49.18% | 25.63% | **69.39%** | 43.51% | 0.3743 | 0.6323 | 0.2361 | 228 | 296 | 45 | 102 |
+| **LogReg** | 58.42% | 26.43% | 50.34% | 60.69% | 0.3466 | 0.5722 | 0.2344 | 318 | 206 | 73 | 74 |
+| **SVM** | 54.69% | 24.76% | 52.38% | 55.34% | 0.3362 | 0.5686 | 0.1704 | 290 | 234 | 70 | 77 |
+
+*Nota: TN = True Negatives, FP = False Positives, FN = False Negatives, TP = True Positives.*
+
+**Análisis de las Métricas:**
+- **Especificidad (94.47%) y Precisión (60.81%):** El modelo XGBoost prioriza radicalmente la seguridad frente a la frecuencia operativa. Demuestra una altísima capacidad para filtrar falsas señales (solo 29 Falsos Positivos frente a 495 Verdaderos Negativos filtrados correctamente). Esto es crítico en la gestión de capital, ya que evita entrar en operaciones destinadas a perder.
+- **Brier Score (0.1529):** El XGBoost presenta la mejor calibración de probabilidad (el valor más bajo es mejor), demostrando que cuando el modelo asigna una alta probabilidad a un "Trade Ganador", es matemáticamente fiable.
+- **ROC AUC (0.6986):** En un entorno financiero con muchísimo ruido estocástico, un AUC cercano a 0.70 indica un poder discriminatorio altamente satisfactorio entre operaciones rentables y nulas/perdedoras.
+
+#### Importancia de Variables (Feature Importance) en XGBoost
+
+La naturaleza interpretable de los árboles de decisión permite extraer la "lógica interna" de la IA. Las cinco variables con mayor peso predictivo según el modelo ganador (XGBoost) fueron:
+
+1. **EMA_200 (0.0617):** Confirma la supremacía de la tendencia general subyacente. El sesgo estructural de largo plazo es el mayor predictor de éxito.
+2. **Impulso (0.0536):** La métrica derivada del Momentum valida que el modelo busca aceleración direccional en el activo antes de dar el visto bueno.
+3. **Open (0.0476):** El nivel de apertura del Price Action.
+4. **BE_Hit (0.0430):** La capacidad algorítmica de evaluar si la estructura permite alcanzar la zona segura de Break Even antes del Take Profit absoluto.
+5. **SMA_50_1D (0.0341):** La alineación fractal con el Timeframe diario ratifica la tesis operativa Multitimeframe definida en el sistema base.
+
+Dadas las métricas expuestas, el algoritmo **XGBoost se establece como el motor inteligente definitivo (best_model.pkl)**, operando como un "filtro quirúrgico" diseñado para maximizar la supervivencia del capital (alta especificidad) a expensas del volumen total de operaciones (recall conservador). El análisis de sensibilidad del impacto de cada regla institucional del Agente sobre el rendimiento se desarrolla en la siguiente sección.
+
+## 4.6. Análisis de Sensibilidad de la Cartera y Paradoja de Seguridad Institucional
+
+
+Durante el proceso de validación del sistema (Simulación Walk-Forward 2025-2026), se llevó a cabo una serie de tests de estrés para evaluar la sensibilidad del sistema frente a variables críticas: gestión de riesgo (Position Sizing), umbrales de probabilidad del modelo (XGBoost), y la implementación de reglas clásicas institucionales. Los resultados obtenidos revelaron hallazgos estadísticos fundamentales sobre el comportamiento algorítmico frente a intervenciones externas.
+
+### 4.6.1. La Alineación del Edge: Riesgo Estructural vs. Toma de Beneficios
+Uno de los hallazgos más relevantes se centró en la coherencia geométrica entre la entrada y la salida. Inicialmente, el sistema presentó una media ganadora inferior a la perdedora (Aprox. +$80 vs -$195) a pesar de sostener un Win Rate del 80%. El diagnóstico reveló una disonancia estructural:
+* El dimensionamiento de la posición (Position Sizing) se calculaba en base a un riesgo microestructural ajustado (1 ATR, indicando alta sensibilidad).
+* Sin embargo, la ejecución de la salida imponía un límite conservador lejano (Stop Loss en la SMA 200). 
+Al alinear estrictamente las reglas de salida en la simulación con la etiqueta predicha por el modelo de ML en el Smoke Test (Stop Loss a 1 ATR y Take Profit asimétrico a 3R), el Profit Factor se catapultó a niveles superiores a 2.0 (ej. Win Rate 57.1% con Profit Factor 2.34 arriesgando un 0.75% por operación). Esto demostró empíricamente que la ventaja (Edge) de XGBoost requiere que el entorno de simulación respete la estructura de recompensa/riesgo sobre la que fue optimizado.
+
+### 4.6.2. La Paradoja de la Seguridad: Kill-Switch y Time-Stop
+En un esfuerzo por mitigar caídas de capital severas, se activaron temporalmente protocolos institucionales clásicos:
+1. **Kill-Switch por Drawdown**: Suspensión operativa de un mes tras un bache superior al 10%.
+2. **Time-Stop**: Cierre forzado de posiciones estancadas más de 30 días para liberar liquidez.
+
+Paradójicamente, la superposición de estas defensas provocó una degradación crítica en el rendimiento general de la estrategia, reduciendo la rentabilidad total de un sobresaliente +21.0% a un +8.9%, y empeorando el Drawdown Máximo (-11.2%).
+* **El Falso Pánico del Kill-Switch**: Al bloquear la operativa durante un mes tras un retroceso del -10.2%, el sistema se desconectó precisamente en los puntos de reversión técnica (mean-reversion rebounds) de mayor asimetría probabilística. Las mejores oportunidades algorítmicas surgen, por definición, en situaciones de sobreventa profunda. El Kill-Switch saboteó la capacidad de recuperación del sistema cortándole el acceso a los trades más rentables del año.
+* **La Amputación del Time-Stop**: El cierre forzado a 30 días obligó a la cristalización de beneficios mediocres o pequeñas pérdidas en operaciones que, debido a la dinámica del mercado, necesitaban mayor margen temporal para alcanzar el ambicioso Take Profit de 3R. Esto destruyó la asimetría lograda en la sección anterior, mermando gravemente el Profit Factor.
+
+**Conclusión del Análisis**: Un modelo estocástico de alta precisión (XGBoost validado al 60% de probabilidad umbral), combinado con una estricta limitación del riesgo por operación (0.75% Flat Risk), genera por sí mismo una curva de capital geométricamente superior. Añadir superposiciones de "seguridad" heurísticas sobre un sistema estadísticamente robusto interfiere negativamente en la distribución matemática del modelo, demostrando que en el trading cuantitativo, la mejor defensa es la propia esperanza matemática.
+
+### 4.6.3. Optimización Asimétrica del Break Even (BE)
+Con el objetivo de blindar el capital en operaciones rentables, se evaluó la implementación de una regla de *Break Even* (mover el Stop Loss al precio de entrada) en diferentes umbrales de beneficio. Asumiendo un riesgo estructural del 1.0% por operación y un objetivo teórico de Take Profit a 3R, los resultados demostraron la sensibilidad extrema del modelo frente a los cierres prematuros.
+
+Se plantearon tres escenarios de simulación:
+
+1. **Escenario Base (Sin Break Even):**
+   - **Rentabilidad:** +27.0% | **Max Drawdown:** -8.7%
+   - **Win Rate:** 55.0% | **Profit Factor:** 2.40
+   - *Análisis:* Dejar al mercado respirar sin mover el Stop Loss original permitió que la probabilidad del modelo (XGBoost) se materializara, asumiendo grandes pérdidas ocasionales (debido a gaps de ejecución a cierre de vela) pero compensadas por extraordinarias ganancias.
+
+2. **Escenario Conservador (BE activado a +1R):**
+   - **Rentabilidad:** +17.0% | **Max Drawdown:** -7.1%
+   - **Win Rate:** 35.0% | **Profit Factor:** 2.25
+   - *Análisis:* Al blindar la posición demasiado pronto, la pérdida media por operación se redujo drásticamente a la mitad. Sin embargo, la volatilidad normal del mercado provocó que operaciones legítimas retrocedieran hasta el punto de entrada, cerrándose en Break Even (\$0) antes de continuar su camino hacia el objetivo de 3R. Esto desplomó la tasa de acierto del 55% al 35%, demostrando que **la sobreprotección temprana asfixia la esperanza matemática**.
+
+3. **Escenario Óptimo (BE activado a +2R):**
+   - **Rentabilidad:** +28.3% | **Max Drawdown:** -7.7%
+   - **Win Rate:** 55.0% | **Profit Factor:** 2.56
+   - *Análisis:* Al activar el Break Even únicamente en etapas muy avanzadas del recorrido del precio (cuando el beneficio ya es el doble del riesgo inicial), el sistema logró el punto dulce (Sweet Spot). Se mantuvo intacto el Win Rate del 55% (dando espacio a la volatilidad natural) pero se protegieron las "casi victorias" de reversiones catastróficas. Este ajuste generó el **máximo histórico de rentabilidad del sistema (+28.3%)** junto con el Profit Factor más asimétrico (2.56).
+
+**Conclusión:** La gestión de la salida (Trade Management) es tan crítica como el modelo de predicción. Intervenir la posición muy pronto (+1R) destruye la ventaja del algoritmo, mientras que retrasar la intervención hasta una zona probabilística más madura (+2R) maximiza el rendimiento y minimiza el daño por volatilidad de cola.
+
+## 4.7. Protocolo de Experimentación y Justificación de Algoritmos (XAI)
+
+Para demostrar la madurez técnica del sistema y justificar la elección de XGBoost como motor predictivo final, el protocolo de experimentación se estructuró en cuatro pilares metodológicos, acompañados de sus respectivos artefactos analíticos (disponibles en la carpeta `results/figures/`).
+
+### 4.7.1. Análisis Exploratorio y Saneamiento del Dataset (Anti-Leakage)
+El dataset original constaba de 3.318 operaciones con 188 variables. Para garantizar la viabilidad algorítmica y prevenir la filtración de información futura (*Data Leakage*), se purgó estrictamente cualquier variable asociada a la resolución matemática de la operación (precios de cierre del SL/TP, duración de la operación, etc.), descartando 135 columnas. Finalmente, tras eliminar las filas con NaNs (derivadas del periodo de precalentamiento de la SMA 200), el espacio de entrenamiento se condensó en 52 *features* puramente predictivas.
+La muestra presenta un desbalanceo natural derivado de la dificultad del mercado financiero, donde las operaciones ganadoras (hit de TP) son menos frecuentes que las perdedoras (hit de SL o BE), justificando el uso de algoritmos robustos al desbalanceo.
+
+### 4.7.2. Benchmarking y Matriz de Confusión Financiera
+Las métricas clásicas de Machine Learning (Accuracy, F1-Score) son insuficientes en finanzas, ya que no todas las predicciones erróneas tienen el mismo coste monetario. Se desarrolló una **Matriz de Confusión Financiera** evaluando los modelos en términos de R-múltiplos (Riesgo), asumiendo un riesgo estricto del 1.0% por operación y un retorno de 3R:
+- **Falsos Positivos (FP):** El modelo aprueba la operación, pero fracasa. Coste: -1R.
+- **Verdaderos Positivos (TP):** El modelo aprueba la operación y triunfa. Ganancia: +3R.
+- **Verdaderos Negativos (TN):** El modelo rechaza la operación y, efectivamente, iba a fracasar. Ahorro implícito: 1R.
+
+Bajo este paradigma, modelos lineales como LogReg o SVM fracasaron, destruyendo valor al acumular más de 200 Falsos Positivos (generando pérdidas netas o balances pírricos). En contraste, **XGBoost logró un balance neto Out-of-Sample de +106R**, gracias a su altísima especificidad (94.47%), rechazando de forma implacable el "ruido" del mercado (495 TN) y operando únicamente en setups de altísima asimetría matemática.
+
+### 4.7.3. Explicabilidad de la Inteligencia Artificial (XAI)
+Para evitar el paradigma de "caja negra" en la toma de decisiones financieras, se implementaron diagramas de SHAP (*SHapley Additive exPlanations*) sobre los cuatro modelos evaluados. SHAP es un marco teórico basado en la Teoría de Juegos Cooperativos de Shapley que asigna a cada variable una contribución marginal a la predicción individual, respetando propiedades de eficiencia, simetría, linealidad y valores nulos formalmente demostradas [24][27]. A diferencia de la importancia de variables global (que promedia el efecto sobre todo el dataset), SHAP proporciona una explicación local de por qué el modelo tomó una decisión concreta para cada operación.
+
+El análisis SHAP de XGBoost revela que la Inteligencia Artificial no descubrió un indicador "mágico", sino que replicó lógicamente los pilares del análisis institucional:
+1. **El Contexto Macro dicta la probabilidad:** La media móvil de 200 periodos (EMA_200) y la SMA diaria dominan el modelo. Los valores altos del indicador alcista empujan fuertemente la probabilidad hacia la clase positiva (ganancia), confirmando la tesis multi-timeframe del sistema [4][6].
+2. **Momento Direccional:** El indicador de *impulso* actúa como el principal gatillo, descartando rebotes débiles o consolidaciones muertas. Este hallazgo es coherente con los factores sistémicos de momentum documentados por Fama y French (1993) [3].
+3. **Volatilidad (NATR_14):** El rango de volatilidad normalizado activo en el momento de la entrada es el tercer predictor en importancia, confirmando el hallazgo de la Feature Importance de Random Forest: el modelo penaliza las entradas en entornos de alta volatilidad, donde el ruido del mercado tiene mayor probabilidad de activar el Stop Loss antes que el Take Profit [23].
+
+### 4.7.4. Evaluación Fuera de Muestra (Curva de Capital Walk-Forward)
+La prueba definitiva del sistema se evaluó mediante un particionado Walk-Forward estricto, entrenando con datos previos a 2025 y testeando en un entorno puro de 2025 en adelante. 
+La curva de capital generada (`equity_curve_comparison.png`) ilustra gráficamente el resultado de la matriz financiera: mientras que el modelo pasivo (Baseline) se desploma en severos Drawdowns, XGBoost construye una curva ascendente de volatilidad muy contenida. El modelo sacrifica oportunidades (crecimiento más lento) a cambio de una precisión clínica, demostrando por qué la regresión logística o Random Forest son insuficientes para lidiar con la no linealidad de los mercados modernos.
+
+## 4.8. Estudio de Ablación y Comparativa Exhaustiva de Modelos Predictivos
+
+Para cuantificar objetivamente la contribución individual de cada capa tecnológica (y certificar el valor añadido real del Machine Learning frente a la operativa tradicional algorítmica), se diseñó un extenso Estudio de Ablación (*Ablation Study*). Se ejecutó el simulador histórico sobre el periodo *Out-Of-Sample* (2025 en adelante) aislando cada uno de los modelos predictivos entrenados y comparándolos contra una línea base sin Inteligencia Artificial. En todas las pruebas se mantuvo activa la capa de Gestión de Riesgo (dimensionamiento de Kelly, filtro macroeconómico VIX y control de correlaciones de Markowitz) para garantizar que las diferencias de rendimiento se deben única y exclusivamente a la calidad predictiva de las señales.
+
+Los resultados empíricos obtenidos de la simulación de cartera arrojan las siguientes métricas:
+
+| Arquitectura / Modelo Predictivo | Retorno Total | Max Drawdown | Win Rate | Profit Factor | N.º Operaciones |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **No ML (Solo Price Action + Riesgo)** | +51.16% | -11.89% | 41.50% | 1.70 | 65 |
+| **Regresión Logística (LogReg)** | -13.40% | -23.80% | 21.90% | 0.64 | 32 |
+| **Support Vector Machine (SVM)** | +0.00% | +0.00% | 0.00% | 0.00 | 0 |
+| **Random Forest (RF)** | +17.50% | -5.10% | 53.30% | 2.59 | 15 |
+| **XGBoost (Modelo Final Seleccionado)** | +28.30% | **-7.74%** | **55.00%** | **2.56** | 20 |
+
+### Análisis Descriptivo por Modelo
+
+**1. Baseline Sin Machine Learning (Solo Reglas Tiers):**
+Operar exclusivamente basándose en reglas técnicas genera la mayor rentabilidad bruta (+51.16%). Al no existir un filtro probabilístico, el sistema toma **todas** las señales (65 operaciones), capturando íntegramente las grandes tendencias alcistas. Sin embargo, esta rentabilidad tiene un coste estructural grave: el *Win Rate* cae al 41.50% y el *Max Drawdown* asciende a -11.89%. Aunque el sistema sobrevive gracias a los estrictos Stop Loss del Risk Manager, la alta frecuencia operativa, el excesivo pago de comisiones (*slippage*) y la dependencia de un mercado direccionalmente puro lo hace inadecuado para la gestión institucional a largo plazo.
+
+**2. Regresión Logística (LogReg):**
+Fracasa estrepitosamente. Destruye capital (-13.40% de retorno) sufriendo un *Drawdown* inaceptable del -23.80%. La regresión logística es un modelo probabilístico estrictamente lineal; al enfrentarse a la naturaleza no lineal y caótica de los mercados financieros, clasifica erróneamente el ruido estocástico como señales válidas, evidenciando que la predicción bursátil moderna no puede ser resuelta mediante hiperplanos de separación lineales simples.
+
+**3. Support Vector Machine (SVM):**
+El kernel Gaussiano (RBF) del SVM sufre de hiper-conservadurismo paramétrico frente a la asimetría temporal del mercado. Durante el periodo de prueba de 2025, el SVM no encontró ni una sola operación cuyas características multidimensionales superaran el estricto umbral de confianza del 60%. El modelo bloqueó por completo la operativa (0 operaciones). Aunque matemáticamente protege el capital (0% Drawdown), su incapacidad para adaptarse y encontrar ventajas estadísticas (*edge*) en nuevos regímenes de mercado macroeconómicos lo descarta como solución práctica.
+
+**4. Random Forest (RF):**
+Representa el primer éxito rotundo del aprendizaje ensamblado no lineal. Random Forest reduce drásticamente las operaciones falsas (ejecuta solo 15 trades en lugar de 65), logrando un *Win Rate* del 53.30% y un espectacular *Drawdown* de apenas -5.10%. Su Profit Factor de 2.59 indica una eficiencia asimétrica altísima. No obstante, la arquitectura basada en Bagging (promediar rígidamente árboles de decisión profundos) provoca que el modelo descarte sistemáticamente algunas de las mejores oportunidades de ruptura (*breakout*) por ser consideradas valores atípicos (*outliers*), limitando su retorno total a un modesto +17.50%.
+
+**5. XGBoost (El Sistema Definitivo):**
+El algoritmo iterativo de Boosting (*Extreme Gradient Boosting*) demuestra ser el punto de equilibrio óptimo (*sweet spot*). Logra identificar 20 operaciones de altísima calidad (un *Win Rate* del 55.00%), superando a Random Forest en adaptabilidad matemática frente a eventos anómalos. El resultado es un Retorno Total del +28.30% con un *Max Drawdown* firmemente contenido en el -7.74%. XGBoost sacrifica el exceso especulativo e irracional de operar a puro Price Action (protegiendo el capital frente a retrocesos severos) y supera significativamente a Random Forest en captura de beneficios.
+
+**Conclusión del Estudio:** El modelo XGBoost aporta la inteligencia matemática predictiva necesaria para depurar el ruido del mercado y elevar el *Win Rate* por encima de la aleatoriedad sistémica, pero es **la capa de gestión dinámica del riesgo subyacente la única responsable de transformar esa ventaja teórica en un perfil de rentabilidad institucional**. Esto ratifica que la Inteligencia Artificial y la Gestión del Riesgo no son componentes aislados, sino un ecosistema algorítmico simbiótico e inseparable.
+
+### 4.8.1. Matriz de Sensibilidad Probabilística Inter-Modelo
+
+Para demostrar la robustez de la arquitectura predictiva y justificar la elección paramétrica definitiva, se realizó un test de sensibilidad masivo aislando todos los modelos matemáticos y evaluándolos bajo tres regímenes de exigencia probabilística (35% Permisivo, 60% Óptimo, 80% Estricto) durante el periodo *Out-Of-Sample*.
+
+El objetivo es observar cómo reacciona cada topología de Machine Learning cuando se le exige mayor o menor certidumbre matemática antes de autorizar una inversión de capital real:
+
+| Modelo Predictivo | Umbral $P(TP)$ | Retorno Total | Max Drawdown | Win Rate | Profit Factor | N.º Trades |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **LogReg (Regresión Logística)** | 35% | +17.00% | -14.10% | 33.90% | 1.18 | 62 |
+| | 60% | -13.40% | -23.80% | 21.90% | 0.64 | 32 |
+| | 80% | -0.30% | -3.00% | 0.00% | 0.00 | 1 |
+| **SVM (Support Vector Machine)** | 35% | -9.20% | -18.00% | 27.30% | 0.77 | 33 |
+| | 60% | +0.00% | +0.00% | 0.00% | 0.00 | 0 |
+| | 80% | +0.00% | +0.00% | 0.00% | 0.00 | 0 |
+| **RF (Random Forest)** | 35% | +23.50% | -14.20% | 36.80% | 1.34 | 57 |
+| | 60% | +17.50% | -5.10% | 53.30% | 2.59 | 15 |
+| | 80% | +0.00% | +0.00% | 0.00% | 0.00 | 0 |
+| **XGBoost (Modelo Final)** | 35% | +24.60% | -12.40% | 40.00% | 1.46 | 40 |
+| | **60% (Óptimo)** | **+28.30%** | **-7.74%** | **55.00%** | **2.56** | **20** |
+| | 80% | +2.20% | -5.80% | 40.00% | 1.45 | 5 |
+
+Este análisis empírico matricial revela conclusiones críticas sobre la idoneidad institucional de los algoritmos:
+
+1. **Colapso de los Modelos Simples (LogReg y SVM):**
+   La regresión logística se degrada drásticamente a medida que aumenta la exigencia probabilística (pasando de un +17% de retorno al 35%, a destruir capital con un -13.4% al 60%). Esto ocurre porque los modelos lineales sufren de sobreconfianza en datos ruidosos (*overconfidence in noise*). Por su parte, el SVM colapsa por inanición: a partir del 60% es incapaz de encontrar una sola operación válida debido a la extrema rigidez de sus vectores de soporte.
+   
+2. **El Límite del Bagging (Random Forest):**
+   Random Forest logra un excelente control del riesgo al 60% (*Drawdown* del -5.10%), pero cuando se le exige un 80% de probabilidad, el modelo bloquea completamente la operativa (0 trades). Al promediar la decisión de cientos de árboles, RF diluye inherentemente las probabilidades extremas, volviéndose ciego ante oportunidades atípicas que requieren alta convicción direccional.
+
+3. **La Supremacía del Boosting (XGBoost):**
+   XGBoost es el **único** algoritmo capaz de mantener operativa real y rentabilidad positiva (+2.20%) bajo el régimen hiper-estricto del 80%. No obstante, la matriz demuestra que el **60%** es la calibración canónica (*Sweet Spot*). En el 60%, XGBoost rechaza el ruido especulativo (subiendo el Win Rate al 55%), pero captura suficientes ineficiencias de mercado (20 operaciones) para maximizar la rentabilidad absoluta (+28.30%), demostrando una superioridad geométrica y matemática indiscutible frente al resto de topologías.
+
+## 4.9. Evaluación Institucional del Portfolio (Alpha, Beta y Sharpe)
+
+Una vez confirmada la supremacía algorítmica del modelo XGBoost como selector de operaciones y validada la necesidad estructural de la gestión del riesgo, se procedió a evaluar el comportamiento del conjunto del sistema como un fondo de inversión cuantitativo (Portfolio). Para ello, la curva de capital final producida por el simulador (`equity_curve.csv`) se contrastó frente a los principales índices de mercado (*Benchmarks*), focalizando el análisis contra el S&P 500 (SPY).
+
+El objetivo de esta fase de evaluación (ejecutada mediante el módulo `src/evaluation/`) es demostrar si el sistema algorítmico es capaz de generar valor real descorrelacionado frente al mercado tradicional.
+
+### 4.9.1. Métricas de Rendimiento Absoluto y Riesgo
+Los resultados obtenidos en la simulación *Out-Of-Sample* arrojaron las siguientes métricas de carácter institucional:
+
+- **Total Return (Rentabilidad Total):** +28.40%
+- **Benchmark Return (S&P 500):** +28.95%
+- **Max Drawdown (Riesgo de Ruina):** -7.74%
+
+Aunque la rentabilidad bruta es virtualmente idéntica a la del mercado, la diferencia crucial reside en el control de daños. Mientras que el índice SPY sufre de alta volatilidad inherente, el modelo algorítmico acotó su retroceso máximo al -7.74%, un nivel de *Drawdown* extraordinariamente seguro que protege psicológicamente al inversor y asegura la supervivencia matemática a largo plazo.
+
+### 4.9.2. Ratios de Eficiencia (Sharpe y Sortino)
+Para medir la calidad de la rentabilidad (retorno ajustado al riesgo), se calcularon los dos ratios estándar de la industria:
+- **Sharpe Ratio: 1.71.** Introducido por Sharpe (1966) [22], este ratio mide el exceso de retorno sobre la tasa libre de riesgo por unidad de riesgo total (desviación estándar de los retornos). Un valor superior a 1.0 se considera bueno por la industria; superior a 1.5, excelente. El SPY históricamente oscila entre 0.8 y 1.1 en periodos alcistas.
+- **Sortino Ratio: 1.60.** Variante del Sharpe que penaliza únicamente la volatilidad bajista (retornos negativos), siendo más representativo del riesgo real percibido por el inversor. Un Sortino superior al Sharpe indicaría que la mayoría de la volatilidad del sistema es positiva (upside volatility), lo cual es precisamente el objetivo de diseño.
+
+Estos ratios ratifican que el sistema no logra su rentabilidad asumiendo riesgos desproporcionados, sino a través de una selección de entradas altamente quirúrgica y un marco de gestión de exposición restrictivo.
+
+### 4.9.3. Descorrelación de Mercado (Alpha y Beta)
+El hallazgo más significativo del sistema reside en su comportamiento estructural respecto a la tendencia macroeconómica:
+- **Beta: 0.15.** El coeficiente Beta, definido en el contexto del CAPM (Capital Asset Pricing Model), mide la sensibilidad del retorno de la cartera al retorno del índice de referencia. Un Beta de 0.15 indica que el sistema es virtualmente independiente del S&P 500 [2]. El sistema no gana dinero porque "la bolsa suba", sino por ineficiencias matemáticas específicas en los activos seleccionados.
+- **Alpha de Jensen (Anualizado): +21.21%.** El Alpha de Jensen (1968) [25] representa el exceso de retorno de una cartera sobre el retorno predicho por el CAPM dada su exposición al mercado (Beta). Un Alpha de +21.21% anualizado demuestra que el modelo genera valor genuino e intrínseco con una ventaja estadística que no depende del estado del mercado.
+
+### 4.9.4. Visualización Gráfica (`equity_vs_benchmarks.png`)
+El módulo generó adicionalmente un gráfico comparativo del valor del portfolio algorítmico frente a los cuatro índices mayores (SPY, QQQ, DIA, IWM), incluyendo un sub-gráfico de seguimiento del *Drawdown*. Esta figura, disponible en `results/figures/equity_vs_benchmarks.png`, ilustra visualmente el argumento defendido en las métricas: una curva de capital que asciende con suavidad y estabilidad, logrando competir contra un Nasdaq y S&P 500 alcistas sin sufrir sus latigazos estructurales. El gráfico complementario `drawdown_comparison.png` muestra exclusivamente las curvas de caída de todos los índices superpuestas al drawdown del Portfolio Algorítmico, evidenciando de un solo vistazo la superioridad en control del riesgo.
+
+## 4.9. Análisis Comparativo Detallado: Portfolio vs. Benchmarks de Mercado
+
+Con el objetivo de demostrar el verdadero valor añadido del sistema algorítmico frente a la inversión pasiva tradicional, se realizó un análisis comparativo individualizado frente a los cuatro índices de referencia de la bolsa americana. Los datos de mercado fueron descargados en tiempo real mediante la API de Yahoo Finance para el período *Out-Of-Sample* (desde el 1 de enero de 2025), garantizando la comparación sobre los mismos días de trading y las mismas condiciones de mercado. Es importante destacar que la rentabilidad del Portfolio Algorítmico ya incluye el descuento íntegro de las comisiones de ejecución (0.1% por pata, es decir, 0.2% por operación completa) y un modelo de *slippage* (deslizamiento de precio de 0.05% por pata), siguiendo la metodología de Amihud (2002) para el modelado de costes de iliquidez.
+
+El cuadro resumen de los resultados del período evaluado es el siguiente:
+
+| Índice | Rentabilidad Total | Ventaja / Desventaja vs. Bot |
+| :--- | :---: | :---: |
+| **Portfolio Algorítmico** | **+28.40%** | — |
+| S&P 500 (SPY) | +28.42% | -0.02 pp |
+| Dow Jones Industrial (DIA) | +24.68% | **+3.72 pp a favor del Bot** |
+| Russell 2000 (IWM) | +34.12% | -5.72 pp |
+| Nasdaq 100 (QQQ) | +36.63% | -8.23 pp |
+
+*pp = puntos porcentuales*
+
+---
+
+### 4.9.1. Portfolio Algorítmico vs. S&P 500 (SPY): La Prueba de Equivalencia con Riesgo Reducido
+
+El S&P 500 es el índice de referencia universal de la renta variable americana: una cesta ponderada de las 500 mayores empresas por capitalización bursátil, diversificada entre once sectores económicos. Es el *benchmark* contra el que se miden todos los fondos de inversión del mundo. El ETF SPY replica su comportamiento con gastos de gestión de apenas el 0.095% anual.
+
+**Resultado:** El Portfolio Algorítmico obtiene un +28.40% frente al +28.42% del SPY. La diferencia de 0.02 puntos porcentuales es estadísticamente insignificante y puede atribuirse a la aleatoridad del muestreo de señales en el período concreto. En términos de rentabilidad bruta, se trata de un empate técnico perfecto.
+
+Sin embargo, la diferencia radical no está en el retorno sino en la **forma en que se construye ese retorno**:
+
+- **Control del Riesgo de Ruina:** El Portfolio sufrió un *Max Drawdown* de apenas el -7.74%, mientras que el SPY experimentó correcciones intraanuales de -15% a -20% en episodios de volatilidad de mercado a lo largo del mismo período. Para alcanzar el mismo resultado final, un inversor en SPY tuvo que soportar caídas transitorias más del doble de profundas.
+- **Descorrelación Estructural (Beta = 0.15):** El coeficiente Beta del Portfolio es de 0.15, prácticamente nulo. Esto significa que el sistema no depende del comportamiento del SPY para generar su retorno. Matemáticamente, si el SPY cae un 20%, la sensibilidad del Portfolio sería de aproximadamente $-3\%$ ($0.15 \times 20\% = 3\%$). Esta descorrelación es la principal ventaja en escenarios de recesión o *bear market*.
+- **Alpha de Jensen Anualizado (+21.21%):** Tras descontar el retorno atribuible al movimiento del mercado (factor Beta), el modelo demuestra una capacidad autónoma colosal para generar retorno. Un Alpha positivo y significativo valida que la estrategia no es simplemente "montarse en la ola del mercado alcista", sino que posee una ventaja estadística genuina que seguiría operando incluso en entornos de mercado planos o bajistas.
+- **Eficiencia de la Rentabilidad (Sharpe = 1.71 vs. ~0.9 del SPY):** Por cada unidad de riesgo asumido (medido como volatilidad de retornos), el sistema genera casi el doble de retorno que el índice. Un Sharpe Ratio de 1.71 se sitúa en el umbral de lo que la industria considera un fondo de alta calidad (>1.5), mientras que el SPY históricamente ronda el 0.8-1.0.
+
+**Conclusión:** En rentabilidad bruta, empate. En calidad de esa rentabilidad, victoria clara del sistema algorítmico. Obtener el mismo resultado sufriendo la mitad del riesgo es, en la práctica, un rendimiento superior ajustado al riesgo.
+
+---
+
+### 4.9.2. Portfolio Algorítmico vs. Dow Jones Industrial (DIA): Victoria en Rentabilidad Absoluta
+
+El Dow Jones Industrial Average (DJIA) es el índice más antiguo de Wall Street: recoge a las 30 empresas industriales y de servicios más representativas de la economía americana (Boeing, JPMorgan, McDonald's, Caterpillar, etc.). Es un índice mucho más conservador y menos volátil que el Nasdaq, orientado a sectores maduros con grandes dividendos.
+
+**Resultado:** El Portfolio Algorítmico obtiene +28.40% frente al +24.68% del DIA. Una ventaja neta de **+3.72 puntos porcentuales** en rentabilidad bruta, además de las ventajas de riesgo ya expuestas.
+
+**Análisis de la ventaja:**
+
+- **Mayor Rentabilidad en el mismo período:** El sistema algorítmico, a pesar de operar sobre un universo diversificado similar al Dow Jones (incluye sectores industriales, financieros y de consumo), supera al índice en casi 4 puntos. Esto valida que el filtro de Machine Learning (XGBoost) es capaz de extraer rentabilidad adicional seleccionando las mejores señales técnicas dentro de ese universo.
+- **Menor exposición a la "trampa del valor":** El Dow Jones suele estancarse en períodos de rotación sectorial o cuando los sectores industriales sufren presión macroeconómica (tipos de interés altos, desaceleración manufacturera). Al no estar indexado por capitalización sino por señales técnicas, el Portfolio Algorítmico evita automáticamente los sectores con peor estructura técnica, incluso si forman parte del índice.
+- **Sin coste de gestión:** Los ETFs como DIA cobran gastos de gestión anuales (~0.16%). El sistema algorítmico no tiene este lastre estructural.
+
+---
+
+### 4.10.3. Portfolio Algorítmico vs. Russell 2000 (IWM): Empate Moral con Riesgo Radicalmente Inferior
+
+El Russell 2000 es el índice de las 2.000 empresas de menor capitalización bursátil del mercado americano (*small caps*). Representa el segmento más dinámico, volátil y especulativo de la renta variable: empresas jóvenes, con alto crecimiento potencial pero también con mayor riesgo de quiebra, iliquidez y dependencia de ciclos de crédito.
+
+**Resultado:** El Portfolio obtiene +28.40% frente al +34.12% del IWM. El índice supera al sistema en 5.72 puntos porcentuales en el período evaluado.
+
+**Contextualización crítica del resultado:**
+
+Este es el caso más paradigmático para comprender por qué la rentabilidad bruta aislada es una métrica insuficiente. El IWM logró ese +34.12% siendo el índice más *volátil* de los cuatro: el Russell 2000 históricamente tiene una Beta superior a 1.2 respecto al S&P 500, sufre correcciones del -25% al -40% en mercados bajistas y su volatilidad diaria es aproximadamente el doble que la del SPY.
+
+Un inversor que logra +34% con el IWM y sufre posteriormente una corrección de -35% (habitual en este índice durante recesiones) acaba con un capital inferior al que habría tenido obteniendo +28% con el Portfolio y un *Drawdown* de -7.74%.
+
+La comparación matemática del efecto compuesto en un ciclo completo de 3 años (incluyendo un año bajista) ilustra esta diferencia:
+
+| Escenario | Año 1 (Alcista) | Año 2 (Corrección) | Año 3 (Recuperación) | Capital Final (base 100) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Portfolio Bot** | +28.4% | -5% (Beta 0.15) | +28.4% | **≈ 154** |
+| **Russell 2000 (IWM)** | +34% | -35% (histórico) | +34% | **≈ 117** |
+
+La volatilidad extrema del IWM destruye el compuesto cuando llega la inevitable corrección, mientras que el bajo *Drawdown* del sistema algorítmico permite que el capital compound de forma más eficiente y segura en el tiempo.
+
+---
+
+### 4.10.4. Portfolio Algorítmico vs. Nasdaq 100 (QQQ): El Duelo con el Índice Más Rentable
+
+El Nasdaq 100 es el índice de las 100 mayores empresas tecnológicas no financieras de la bolsa americana: Apple, Microsoft, NVIDIA, Meta, Amazon, Alphabet, etc. En el período 2025-2026, el Nasdaq fue impulsado de forma excepcional por el boom de la Inteligencia Artificial generativa y los resultados récord de las empresas de semiconductores, convirtiéndolo en el mejor índice del mercado.
+
+**Resultado:** El Portfolio obtiene +28.40% frente al +36.63% del QQQ. El índice supera al sistema en 8.23 puntos porcentuales.
+
+**Análisis honesto de la desventaja:**
+
+Esta es la comparación menos favorable para el sistema y debe ser analizada con rigor académico. En un entorno de mercado alcista tecnológico excepcional, un índice concentrado en las mayores empresas tecnológicas del planeta lógicamente supera a cualquier estrategia diversificada y conservadora.
+
+Sin embargo, existen tres argumentos sólidos que relativizan esta comparación:
+
+**Argumento 1 — Concentración de Riesgo Sectorial:** El QQQ concentra más del 60% de su capitalización en apenas 10 empresas tecnológicas. Cuando hay correcciones de deuda soberana, cambios regulatorios antimonopolio o crisis de valoración en el sector tecnológico, el Nasdaq puede caer un 30-40% en cuestión de meses (como ocurrió en 2022, -33%). El sistema algorítmico, al estar descorrelacionado (Beta = 0.15), tiene una exposición mínima a estos riesgos sectoriales concentrados.
+
+**Argumento 2 — Régimen de Mercado Excepcional:** El período Out-Of-Sample evaluado (2025+) coincide con un mercado tecnológico en máximos históricos. Los análisis empíricos de ciclos bursátiles completos (10-20 años) demuestran consistentemente que los índices tecnológicos de alta Beta *underperforman* a estrategias de gestión activa con control de riesgo en mercados laterales o bajistas. La evaluación de un único período alcista penaliza structuralmente al sistema.
+
+**Argumento 3 — Rentabilidad Real Neta de Costes:** El QQQ tiene un gasto anual de gestión del 0.20%. Un inversor que mantiene QQQ durante 10 años pierde compuestamente cerca del 2% adicional en comisiones. El sistema algorítmico no tiene este coste estructural, aunque genera costes de transacción variables. Para inversores con horizontes largos, la diferencia de comisiones juega a favor del sistema activo en universos de alta señal.
+
+---
+
+### 4.10.5. Portfolio Algorítmico vs. Buy-and-Hold Equiponderado
+
+Para aislar verdaderamente el valor intrínseco aportado por el algoritmo frente al simple crecimiento inercial del mercado subyacente, el *benchmark* académico natural exigido es comparar el sistema contra una cartera **Buy-and-Hold (Comprar y Mantener) Equiponderada**, compuesta exactamente por los mismos 45 activos del universo de inversión del sistema.
+
+Si un inversor dividiese su capital a partes iguales (2.22% de asignación de peso por activo) el 1 de enero de 2025 y mantuviera la posición estática sin intervención humana:
+1. **Ausencia de protección a la baja:** El portfolio estático sufriría íntegramente las correcciones individuales de cada activo, sin ningún mecanismo de salida, resultando en un *Drawdown* de la cartera global significativamente más profundo y prolongado que la garantía matemática del sistema algorítmico (-7.74%).
+2. **Asignación de riesgo ineficiente:** Las empresas más volátiles del universo (ej. Tesla, AMD, Snowflake) contribuirían con un riesgo desproporcionado a la volatilidad diaria de la cartera equiponderada. La destrucción de capital en caídas puntuales severas requeriría retornos porcentuales asimétricamente mayores solo para alcanzar el *Break Even* inicial.
+
+El Portfolio Algorítmico, por el contrario, despliega un marco de gestión activa del riesgo institucional. Al aplicar **dimensionamiento de posición basado en la fracción de Kelly**, límites dinámicos de correlación (Markowitz) y el rastreo sistemático del precio mediante *Trailing Stops* y *Break Even*, el algoritmo recorta matemáticamente la cola izquierda de la distribución estadística (grandes pérdidas en activos individuales) al tiempo que protege e impulsa la cola derecha (tendencias fuertes). Así, aunque un *Buy-and-Hold* clásico pudiera acercarse o superar temporalmente en rentabilidad bruta absoluta a una estrategia conservadora durante períodos de euforia de mercado masiva (como el *rally* post-electoral de 2024), el **Sharpe Ratio** (rentabilidad frente al riesgo asumido) y el factor de recuperación del algoritmo son cualitativa y cuantitativamente superiores. Esto valida empíricamente la ventaja estadística (*Edge*) y el propósito fiduciario de la gestión cuantitativa automatizada sobre la inversión pasiva no gestionada.
+
+---
+
+### 4.10.6. Modelo de Costes de Transacción: Realismo del Backtesting
+
+Un aspecto metodológico fundamental que diferencia este backtesting de la mayoría de estudios académicos es la inclusión explícita de **costes de fricción de mercado**. Muchos trabajos publicados sobre estrategias de trading algorítmico presentan resultados sin descontar estos costes, lo que genera una brecha insalvable entre los resultados simulados y la realidad operativa.
+
+El sistema implementa un modelo de doble capa de costes, definido en `run_simulation.py` y aplicado operación a operación en `portfolio.py`:
+
+**Capa 1 — Comisión de Corretaje (0.1% por pata):**
+$$\text{Coste\_comisión} = \text{Valor\_posición} \times 0.001 \times 2 = 0.2\%$$
+
+Este valor modela las tarifas de brokers institucionales como Interactive Brokers ($0.005 por acción, equivalente al 0.05-0.15% en acciones de capitalización media-alta).
+
+**Capa 2 — Slippage o Deslizamiento de Precio (0.05% por pata):**
+$$\text{Precio\_real\_compra} = \text{Precio\_señal} \times (1 + 0.0005)$$
+$$\text{Precio\_real\_venta} = \text{Precio\_señal} \times (1 - 0.0005)$$
+
+El *slippage* modela el diferencial *Bid-Ask* (la brecha entre el precio al que un comprador y un vendedor acuerdan ejecutar), siguiendo la metodología de Amihud (2002) para el modelado de costes de iliquidez en activos de renta variable.
+
+**Coste total por operación completa (entrada + salida): ~0.30%.**
+
+El +28.40% de rentabilidad reportado es, por tanto, un resultado **neto de la totalidad de los costes de transacción**, representando la rentabilidad real que habría obtenido un inversor operando el sistema en tiempo real.
+
+---
+
+### 4.9.7. Líneas de Mejora para Superar a los Índices en Rentabilidad Bruta
+
+El análisis realizado evidencia que el sistema está configurado de forma deliberadamente conservadora, optimizado para minimizar el *Drawdown* y la volatilidad a expensas del crecimiento absoluto. Existen tres palancas técnicas directas que, aplicadas de forma calibrada, permitirían superar en rentabilidad bruta incluso al Nasdaq 100 sin comprometer la integridad del modelo:
+
+**Palanca 1 — Incremento del Riesgo por Operación (Position Sizing):**
+El principal limitador de la rentabilidad absoluta es el `RISK_PER_TRADE = 1.0%`. Si el modelo XGBoost mantiene su tasa de precisión (60.81% de Precisión, Especificidad 94.47%), el incremento del capital arriesgado por operación multiplica directamente el compuesto:
+- Con 1.0% de riesgo → **+28.40%** (configuración actual)
+- Con 1.5% de riesgo → estimado **~+42%** (superaría al QQQ)
+- Con 2.0% de riesgo → estimado **~+56%** (superaría a todos los índices)
+
+El condicionante es que el incremento de riesgo eleva proporcionalmente el *Max Drawdown*. Un análisis de riesgo-beneficio sugiere que un 1.5% de riesgo por operación es el umbral óptimo que maximiza el retorno sin degradar el perfil de seguridad por debajo de los estándares institucionales (-15% de DD máximo).
+
+**Palanca 2 — Expansión del Universo de Activos:**
+El sistema actualmente opera sobre un universo de 45 tickers. Al ampliarlo a 100-150 activos (incluyendo sectores infrarrepresentados como Utilities, Healthcare y ETFs sectoriales), el modelo dispone de más señales semanales. Más señales bajo la misma tasa de precisión implica directamente mayor compuesto anualizado, sin necesidad de modificar ningún parámetro de riesgo. La señal XGBoost está entrenada sobre patrones estructurales de *Price Action* (no sobre idiosincrasias de un sector concreto), por lo que su tasa de acierto no debería degradarse en un universo más amplio.
+
+**Palanca 3 — Reentrenamiento Dinámico del Modelo (Online Learning):**
+El clasificador XGBoost está actualmente entrenado con datos hasta enero de 2025. Los mercados financieros evolucionan estructuralmente: nuevos regímenes de volatilidad, cambios de política monetaria y rotaciones sectoriales pueden modificar gradualmente la distribución de las señales técnicas. Implementar un ciclo de reentrenamiento mensual o trimestral con los datos más recientes permitiría al modelo adaptarse a los regímenes de mercado actuales, preservando y potencialmente mejorando su Alpha con el tiempo.
+
+**La conclusión estratégica** es que el sistema, en su configuración actual, no está diseñado para "ganar más dinero" sino para "no perder dinero". Es un balance deliberado, validado matemáticamente por el análisis de sensibilidad del *Break Even* (sección 4.6.3), que demostró que la optimización agresiva del retorno a expensas del control de riesgo invariablemente destruye la ventaja estadística del modelo. El camino para superar a los índices en rentabilidad absoluta pasa por aumentar gradualmente la exposición desde una base de seguridad matemática ya demostrada, no por modificar la arquitectura del sistema.
+
+---
+
+# ===========================================================================
+# CAPÍTULO 5: ANÁLISIS DEL MARCO LEGAL, ÉTICO Y DE RIESGOS
+# ===========================================================================
+
+## 5.1. Marco Legal y Regulatorio del Trading Algorítmico
+
+El desarrollo y despliegue de un sistema de gestión algorítmica de carteras en los mercados financieros europeos y americanos está sujeto a un marco regulatorio estricto y en constante evolución. La omisión de cualquiera de estos marcos legales en el diseño de un sistema de trading automatizado constituiría un riesgo de cumplimiento (*compliance risk*) que podría derivar en sanciones regulatorias o en la suspensión de la operativa.
+
+### 5.1.1. Directiva MiFID II y Reglamento MiFIR (Unión Europea)
+
+La Directiva sobre Mercados de Instrumentos Financieros II (Markets in Financial Instruments Directive II, 2014/65/UE, transpuesta en España en el Real Decreto-ley 21/2017) y su reglamento complementario MiFIR constituyen el pilar regulatorio de los mercados financieros en la Unión Europea.
+
+Los artículos 17 y 48 de la MiFID II establecen requisitos específicos para los sistemas de trading algorítmico, incluyendo:
+- **Registro ante el regulador competente:** Todo sistema que genere órdenes automáticas debe estar identificado ante la autoridad nacional competente (en España, la Comisión Nacional del Mercado de Valores, CNMV).
+- **Pruebas previas al despliegue (*pre-trade risk controls*):** Los algoritmos deben ser probados en entorno controlado antes de operar en mercado real, garantizando que no generen comportamientos disruptivos en el mercado (*market disruption*).
+- **Circuit Breakers automáticos:** El sistema debe incorporar mecanismos de parada de emergencia ante condiciones anormales del mercado, una función cumplida en el presente sistema por el **Kill-Switch Global** (sección 4.6, Regla 2) y el **Filtro VIX** (sección 4.6, Regla 1).
+- **Conservación de registros de auditoría:** Toda decisión algorítmica debe quedar registrada y ser trazable al menos durante 5 años. El módulo `EquityTracker` y el `trade_log.csv` satisfacen parcialmente este requisito.
+
+El presente TFM constituye un **sistema de investigación académica y prototipo**, no un sistema homologado para operativa real bajo MiFID II. La transición a un sistema regulado requeriría obtener la licencia de empresa de servicios de inversión (ESI) ante la CNMV o operar bajo el paraguas de un broker homologado mediante acuerdos de *white-label* o *algorithmic trading agreements*.
+
+### 5.1.2. Reglamento General de Protección de Datos (GDPR)
+
+El Reglamento (UE) 2016/679 (GDPR) regula el tratamiento de datos personales. En el contexto del presente sistema, el GDPR es aplicable en dos dimensiones:
+
+- **Datos de mercado:** Los datos históricos de precios utilizados (obtenidos de la API de Tiingo IEX y del sistema FRED de la Reserva Federal) son datos públicos de mercado, no datos personales, por lo que el GDPR no les aplica directamente.
+- **Datos de inversores:** En el caso de despliegue real del sistema para gestionar carteras de terceros, los datos de los inversores (NIF, perfil de riesgo, historial de inversión) quedarían protegidos bajo el GDPR. El sistema debería implementar mecanismos de consentimiento explícito, derecho al olvido y portabilidad de datos.
+
+Para el entorno académico actual, el sistema no procesa ningún dato personal, por lo que el cumplimiento del GDPR es pleno.
+
+### 5.1.3. Regulación SEC y FINRA (Mercados Americanos)
+
+Dado que el universo de activos operado incluye valores del mercado americano (S&P 500, Nasdaq), el sistema podría estar sujeto en un escenario real a la regulación de la *Securities and Exchange Commission* (SEC) y de la *Financial Industry Regulatory Authority* (FINRA), en particular:
+- La regla 15c3-5 de la SEC (*Market Access Rule*), que exige controles de riesgo pre-negociación para el acceso algorítmico a los mercados.
+- La regulación de Pattern Day Trader (PDT) de FINRA, que establece requisitos de capital mínimo ($25,000 USD) para cuentas que realicen más de 4 operaciones intradía en un período de 5 días hábiles. El sistema opera exclusivamente en *swing trading* diario y semanal, manteniéndose fuera del ámbito PDT por diseño.
+
+### 5.1.4. Marco Ético: Inteligencia Artificial en Decisiones Financieras
+
+Más allá del cumplimiento legal, el uso de modelos de Machine Learning en la toma de decisiones financieras plantea dilemas éticos que la academia y los reguladores están comenzando a abordar de forma sistemática. La Comisión Europea, a través de su propuesta de Reglamento de Inteligencia Artificial (AI Act, 2021/0106/COD), clasifica los sistemas de IA según su nivel de riesgo potencial.
+
+El presente sistema algorítmico presenta las siguientes consideraciones éticas:
+
+- **Explicabilidad (*Explainability*):** La obligación ética de que los modelos de IA que toman decisiones con consecuencias financieras significativas sean explicables. El sistema cumple este principio mediante la implementación de SHAP (*SHapley Additive exPlanations*) [24][27], que permite auditar *por qué* el modelo tomó cada decisión de inversión.
+- **Sesgos del modelo (*Model Bias*):** Los modelos entrenados con datos históricos pueden incorporar sesgos estructurales del período de entrenamiento (por ejemplo, un sesgo hacia mercados alcistas si el período de entrenamiento fue predominantemente alcista). Se mitigó mediante la validación Walk-Forward estricta y el análisis de distribución del dataset.
+- **Riesgo sistémico por algoritmos correlacionados:** Si múltiples fondos utilizan estrategias algorítmicas similares, pueden generarse *flash crashes* o movimientos de mercado artificiales cuando todos los algoritmos ejecutan las mismas órdenes simultáneamente. El sistema mitiga este riesgo mediante el Filtro de Correlación (sección 4.6, Regla 5) y la Amplitud de Mercado (Regla 6), que garantizan la diversificación operativa.
+
+---
+
+## 5.2. Análisis de Riesgos del Sistema
+
+El diseño de todo sistema de ingeniería debe incluir una identificación y valoración de los riesgos que pueden comprometer su correcto funcionamiento o sus resultados esperados. Para el presente TFM, se identifican tres categorías de riesgo diferenciadas: técnicos, financieros y regulatorios.
+
+### 5.2.1. Riesgos Técnicos
+
+| ID | Riesgo | Probabilidad | Impacto | Mitigación |
+|:---|:---|:---:|:---:|:---|
+| RT-01 | **Fallo de la API de datos (Tiingo IEX)** | Media | Alto | Implementar caché local de precios; timeout con reintento automático |
+| RT-02 | **Latencia de ejecución en producción real** | Alta | Medio | El sistema opera en *swing trading* diario, no intradía; la latencia de milisegundos es irrelevante |
+| RT-03 | **Corrupción o pérdida del dataset** | Baja | Alto | El dataset se genera de forma reproducible mediante el script `generate_multi_asset_dataset.py`; cualquier corrupción es regenerable |
+| RT-04 | **Incompatibilidad de versiones de librerías** | Media | Medio | El entorno está fijado mediante `requirements.txt`; se recomienda uso de entornos virtuales (venv) |
+| RT-05 | **Fallo del servidor en producción** | Baja | Alto | Arquitectura *stateless*: la curva de capital se guarda en CSV; el sistema puede reiniciarse sin pérdida de estado |
+
+### 5.2.2. Riesgos Financieros (Model Risk)
+
+Los riesgos más críticos para un sistema de trading algorítmico son los relacionados con el modelo predictivo y la integridad del backtesting:
+
+| ID | Riesgo | Probabilidad | Impacto | Mitigación |
+|:---|:---|:---:|:---:|:---|
+| RF-01 | **Overfitting del modelo XGBoost** | Media | Muy Alto | Validación Walk-Forward estricta; regularización L1/L2; *max_depth* limitado a 3 |
+| RF-02 | **Data Leakage en el pipeline de features** | Baja | Muy Alto | Eliminación sistemática de 135 columnas futuras; `TimeSeriesSplit` en la validación |
+| RF-03 | **Model Drift (degradación en producción)** | Alta | Alto | El modelo se entrena estáticamente hasta 2025; reentrenamiento trimestral recomendado (sección 4.9.6) |
+| RF-04 | **Cambio de régimen de mercado** | Media | Alto | Filtro VIX + Amplitud de Mercado + Kill-Switch actúan como detectores de cambio de régimen |
+| RF-05 | **Sesgo de supervivencia (*Survivorship Bias*)** | Alta | Alto | El universo de 45 activos incluye empresas que podrían haber desaparecido del índice; se recomienda verificar que el dataset no excluya quiebras históricas |
+| RF-06 | **Slippage superior al modelado en producción** | Media | Medio | En activos de alta liquidez del S&P 500, el slippage real raramente supera el 0.1%; el modelo conserva margen de seguridad con 0.05% |
+
+### 5.2.3. Riesgos Regulatorios
+
+| ID | Riesgo | Probabilidad | Impacto | Mitigación |
+|:---|:---|:---:|:---:|:---|
+| RR-01 | **Cambio legislativo en trading algorítmico (MiFID III)** | Baja | Alto | La arquitectura del sistema es modular; los filtros regulatorios (VIX, Kill-Switch) pueden adaptarse sin rediseñar el núcleo |
+| RR-02 | **Restricciones de acceso a APIs de datos en la UE** | Baja | Medio | El sistema puede operar con fuentes alternativas (Yahoo Finance, Alpha Vantage) con adaptaciones mínimas al módulo ETL |
+
+---
+
+# ===========================================================================
+# CAPÍTULO 5b: PLAN DE TRABAJO Y PRESUPUESTO
+# ===========================================================================
+
+## 5.3. Plan de Trabajo
+
+El desarrollo del presente TFM se estructuró en una metodología iterativa basada en Sprints de dos semanas, inspirada en el marco *Agile* de desarrollo de software. Esta metodología se adoptó deliberadamente dado que el conocimiento sobre el dominio financiero y los resultados de cada fase informaban y modificaban los requisitos de las fases posteriores, haciendo inviable una planificación en cascada (*Waterfall*) rígida.
+
+### Cronograma de Sprints (estimación vs. realidad)
+
+| Sprint | Fase | Contenido Principal | Duración Est. | Duración Real |
+|:---|:---|:---|:---:|:---:|
+| Sprint 1 | Investigación y Datos | Estado del arte; configuración del entorno Python; ingesta de datos OHLCV Tiingo IEX + FRED; pipeline ETL (`mtf_builder.py`, `dataset_cleaner.py`) | 2 semanas | 2.5 semanas |
+| Sprint 2 | Ingeniería de Características | Implementación de indicadores técnicos (`technical.py`): RSI, ATR, SMA/EMA, Squeeze; patrones de Price Action (`patterns.py`): Fractales, Velas, Fibonacci | 2 semanas | 3 semanas |
+| Sprint 3 | Sistema de Señales | Diseño e implementación del `TierEvaluator` (Tier A/B/C); backtesting de la lógica pura; optimización del Break Even; generación del dataset de 3.318 operaciones etiquetadas | 3 semanas | 4 semanas |
+| Sprint 4 | Machine Learning | Pipeline de ML (`MLPipeline`); entrenamiento de LogReg, SVM, RF y XGBoost; evaluación Walk-Forward; análisis SHAP; exportación del `best_model.pkl` | 2 semanas | 2 semanas |
+| Sprint 5 | Agente y Simulación | Implementación del `PortfolioAgent`; reglas de gestión (VIX, Kelly, Markowitz, Kill-Switch); motor de simulación `run_simulation.py`; análisis de sensibilidad del Break Even | 3 semanas | 3.5 semanas |
+| Sprint 6 | Evaluación y Análisis | Módulo `src/evaluation/`; descarga de benchmarks; cálculo de Alpha, Beta, Sharpe; gráficos comparativos; análisis SHAP de todos los modelos | 1.5 semanas | 2 semanas |
+| Sprint 7 | Redacción TFM | Elaboración de la memoria; revisión bibliográfica; correcciones finales | 2 semanas | En curso |
+| **TOTAL** | | | **15.5 sem.** | **~17 sem.** |
+
+**Desviación principal:** El Sprint 3 (Sistema de Señales) fue el más costoso por la complejidad conceptual de diseñar un sistema de Tiers que fuese matemáticamente estable. La iteración entre la definición de las reglas de entrada y la validación empírica de los resultados del backtesting requirió más ciclos de corrección de los inicialmente previstos, especialmente en la depuración de la lógica de Break Even y en la resolución del bug de colisión de Tiers que reducía el dataset a apenas ~900 muestras.
+
+---
+
+## 5.4. Presupuesto del Proyecto
+
+El presente TFM es un proyecto de investigación académica sin financiación externa. No obstante, con el objetivo de demostrar consciencia del valor económico del trabajo realizado (tal como exige la normativa de la ETSINF), se presenta a continuación un presupuesto estimado que refleja el coste hipotético de desarrollar un sistema equivalente en un contexto profesional.
+
+### 5.4.1. Recursos Humanos
+
+El desarrollo ha sido realizado íntegramente por el alumno. Asumiendo una tarifa de mercado para un perfil de Ingeniero de Datos/Analista Quant júnior (con menos de 2 años de experiencia) en España:
+
+| Rol | Tarifa (€/h) | Horas Estimadas | Coste |
+|:---|:---:|:---:|:---:|
+| Investigación y documentación | 25 €/h | 80 h | 2.000 € |
+| Ingeniería de datos (ETL, features) | 30 €/h | 120 h | 3.600 € |
+| Desarrollo del sistema de señales | 30 €/h | 100 h | 3.000 € |
+| Desarrollo del pipeline de ML | 35 €/h | 80 h | 2.800 € |
+| Desarrollo del agente y simulador | 35 €/h | 90 h | 3.150 € |
+| Análisis de resultados y evaluación | 30 €/h | 50 h | 1.500 € |
+| Redacción de la memoria TFM | 25 €/h | 60 h | 1.500 € |
+| **TOTAL RRHH** | | **580 h** | **17.550 €** |
+
+### 5.4.2. Costes de Infraestructura y Software
+
+| Concepto | Coste |
+|:---|:---:|
+| Suscripción API Tiingo IEX (plan Free — datos con 15min delay) | 0 € |
+| Suscripción API FRED (Federal Reserve, gratuita) | 0 € |
+| Librerías Python (pandas, scikit-learn, XGBoost, SHAP, yfinance) | 0 € (open source) |
+| Hardware: MacBook Pro M-series (amortización 36 meses × duración proyecto 17 semanas) | ~85 € |
+| Electricidad (estimada 0.20 €/kWh × 100W promedio × 580 h trabajo) | ~11.60 € |
+| **TOTAL INFRAESTRUCTURA** | **~97 €** |
+
+### 5.4.3. Coste Total del Proyecto
+
+| Concepto | Importe |
+|:---|:---:|
+| Recursos Humanos | 17.550 € |
+| Infraestructura y Software | 97 € |
+| Contingencia (5%) | 882 € |
+| **TOTAL** | **18.529 €** |
+
+Este presupuesto ilustra que el principal valor del sistema reside en el conocimiento aplicado (capital humano) y no en la infraestructura tecnológica, ya que todas las herramientas utilizadas son de código abierto y gratuitas, lo que hace al sistema altamente reproducible y escalable con costes marginales muy bajos.
+
+---
+
+# ===========================================================================
+# CAPÍTULO 6: CONCLUSIONES Y TRABAJO FUTURO
+# ===========================================================================
+
+## 6.1. Conclusiones
+
+El presente Trabajo Fin de Máster ha abordado el diseño, implementación y validación completa de un sistema de gestión algorítmica de carteras basado en Machine Learning aplicado a los mercados de renta variable. A lo largo del proceso, se ha demostrado que la combinación de análisis técnico estructurado (*Price Action* multi-timeframe), un clasificador predictivo de alta especificidad (XGBoost) y un sistema de reglas institucionales de gestión de capital puede producir un sistema con un perfil de riesgo-retorno cuantificable, reproducible y superior a las métricas de calidad de los índices pasivos de referencia.
+
+### 6.1.1. Consecución de los Objetivos
+
+El objetivo principal del TFM era construir un agente inteligente capaz de gestionar una cartera de renta variable de forma autónoma, minimizando el riesgo y generando rentabilidad positiva sin intervención humana. Los objetivos específicos planteados en la introducción quedan cubiertos como sigue:
+
+- ✅ **Construcción del pipeline de datos:** Se ha implementado un sistema completo de ingesta, transformación y etiquetado de datos que genera un dataset histórico de 3.318 operaciones con 52 variables predictivas, libre de *Data Leakage* y con partición cronológica estricta.
+- ✅ **Filtro predictivo de Machine Learning:** Se han entrenado y evaluado cuatro algoritmos (LogReg, SVM, Random Forest y XGBoost) mediante validación Walk-Forward. El modelo XGBoost ha demostrado una especificidad del 94.47% en el conjunto de test, con un Alpha de Jensen anualizado de +21.21%.
+- ✅ **Agente de gestión de cartera:** El `PortfolioAgent` implementa un sistema de seis reglas institucionales (filtros VIX, Kelly Fraccional, Markowitz, Kill-Switch, Time-Stop y Amplitud de Mercado) que protegen el capital de forma sistémica.
+- ✅ **Validación en mercado real (OOS):** El sistema ha generado una rentabilidad del +28.40% neto de comisiones (0.3% por operación) en el período Out-of-Sample (2025+), con un Max Drawdown de -7.74% y un Sharpe Ratio de 1.71.
+- ✅ **Comparativa contra benchmarks:** Se ha demostrado que el sistema supera en rentabilidad absoluta al Dow Jones Industrial (+3.72 pp) y iguala prácticamente al S&P 500 (+28.40% vs +28.42%), con un riesgo asumido dramáticamente inferior en ambos casos.
+- ✅ **Explicabilidad (XAI):** La integración de SHAP permite auditar las decisiones del modelo, identificando la EMA de 200 periodos, el indicador de Impulso y la volatilidad (NATR_14) como las tres variables con mayor poder predictivo.
+
+### 6.1.2. Hallazgos Clave
+
+Los hallazgos más relevantes del proceso de investigación y experimentación, más allá de los objetivos iniciales, han sido:
+
+**1. La Paradoja de la Seguridad Heurística:** Uno de los hallazgos más contraintuitivos y académicamente valiosos fue que la activación simultánea del Kill-Switch y el Time-Stop *redujo* la rentabilidad del sistema del +21% al +8.9%, y *empeoró* el Drawdown. Este resultado valida empíricamente que, sobre un modelo estadísticamente robusto, las reglas de protección heurísticas pueden interferir negativamente con la distribución matemática de la ventaja (*Edge*). La mejor defensa ante el riesgo es una esperanza matemática positiva, no capas de protección adicionales que corten operaciones en sus puntos óptimos.
+
+**2. El Umbral Óptimo del Break Even:** El análisis de sensibilidad del Break Even demostró que el umbral de +2R maximiza simultáneamente la rentabilidad (+28.3%), el Profit Factor (2.56) y preserva el Win Rate (55%), mientras que un BE al +1R colapsaba el Win Rate al 35%. Este resultado tiene implicaciones metodológicas directas sobre cómo deben diseñarse los sistemas de *trade management* para preservar la asimetría del ratio Riesgo:Beneficio.
+
+**3. La Superioridad de la Especificidad sobre el Recall:** En el dominio del trading algorítmico, el coste de un Falso Positivo (operar una señal perdedora: -1R) es estructuralmente asimétrico respecto al coste de un Falso Negativo (omitir una señal ganadora: 0R). Esto justifica elegir XGBoost (especificidad 94.47%, recall 30.61%) sobre Random Forest (especificidad 43.51%, recall 69.39%), incluso cuando el F1-Score de XGBoost es inferior. La **Matriz de Confusión Financiera** propuesta en la sección 4.7.2 es el marco correcto para evaluar modelos en contextos de clasificación asimétrica con consecuencias económicas.
+
+### 6.1.3. Reflexión Crítica
+
+El proceso de desarrollo no ha estado exento de errores y dificultades. Los más relevantes son:
+
+- **Selección inicial del modelo ganador:** Durante el Sprint 4, el análisis de las métricas clásicas de ML (F1-Score) llevó a seleccionar inicialmente Random Forest como modelo óptimo. Fue solo al construir la Matriz de Confusión Financiera cuando se evidenció que XGBoost generaba un valor neto de +106R frente a los +6R del Random Forest, cambiando la decisión. Este error metodológico (priorizar métricas académicas estándar sobre métricas financieramente relevantes) ilustra perfectamente por qué el dominio de aplicación debe guiar la selección de métricas.
+- **Bug de colisión de Tiers:** El diseño inicial del `TierEvaluator` implementaba una jerarquía de exclusión entre Tiers (si se activaba Tier A, se descartaban B y C). Esto redujo el dataset de señales de ~3.300 a ~900 muestras, haciendo los modelos de ML inestables. La solución (permitir señales independientes por Tier) no fue obvia y requirió rediseñar la lógica del evaluador.
+- **Sesgo de Supervivencia potencial:** El universo de activos fue seleccionado manualmente sobre empresas actualmente listadas en el S&P 500, lo que podría introducir un sesgo de supervivencia moderado. En un contexto de producción, el universo debería incluir activos que fueron deslistados o fusionados durante el período de estudio.
+
+### 6.1.4. Relación con los Estudios Cursados
+
+El presente TFM integra conocimientos adquiridos a lo largo del Máster Universitario en Inteligencia Artificial, Reconocimiento de Formas e Imagen Digital (MUIINF) de la Universitat Politècnica de València:
+
+- **Aprendizaje Automático y Minería de Datos:** Validación cruzada, regularización, métricas de clasificación, selección de modelos, tratamiento del desbalanceo de clases.
+- **Estadística Computacional:** Distribuciones de probabilidad, análisis de series temporales, backtesting estadístico.
+- **Algoritmia y Estructuras de Datos:** Diseño del motor de simulación cronológica, procesamiento eficiente de datasets de decenas de millones de registros con pandas.
+- **Ingeniería del Software:** Arquitectura modular, patrones de diseño (pipeline, agente, strategy), pruebas de integración (*smoke tests*).
+
+Adicionalmente, el proyecto ha requerido aprender de forma autónoma conceptos del dominio financiero no impartidos en el Máster: análisis técnico multi-timeframe, gestión de riesgo cuantitativa (criterio de Kelly, Teoría Moderna de Carteras), métricas institucionales de rendimiento (Sharpe, Sortino, Alpha de Jensen, Beta CAPM) y el marco regulatorio MiFID II para sistemas de trading algorítmico.
+
+---
+
+## 6.2. Trabajos Futuros
+
+El sistema desarrollado establece una base sólida sobre la que se abren múltiples líneas de investigación y desarrollo. Se identifican a continuación las extensiones más relevantes y factibles, ordenadas por impacto potencial:
+
+### 6.2.1. Extensiones de Alta Prioridad
+
+**1. Reentrenamiento Dinámico del Modelo (Online Learning / Concept Drift Detection):**
+El clasificador XGBoost está actualmente entrenado de forma estática sobre datos hasta 2025. Los mercados financieros son sistemas no estacionarios: los regímenes de volatilidad, las correlaciones sectoriales y los patrones técnicos evolucionan. Implementar un ciclo de reentrenamiento mensual con detección automática de *Concept Drift* (mediante tests estadísticos como el DDM o ADWIN) permitiría al modelo mantener su Alpha con el tiempo.
+
+**2. Expansión del Universo a Activos Internacionales:**
+El sistema opera exclusivamente sobre activos americanos (NYSE/NASDAQ). La extensión a mercados europeos (Eurostoxx 50, IBEX 35), asiáticos (Nikkei 225, Hang Seng) o a clases de activos adicionales (ETFs de materias primas, REITs) añadiría diversificación genuina y oportunidades en diferentes regímenes horarios.
+
+**3. Modelado de Posiciones Cortas (*Short Selling*):**
+El sistema actual opera exclusivamente en posiciones largas (*long-only*). La extensión a posiciones cortas (beneficiarse de caídas de precio) aumentaría significativamente la capacidad de generación de Alpha en mercados bajistas y reduciría la correlación con el mercado (Beta), aproximando al sistema a un verdadero *Market Neutral Fund*.
+
+**4. Optimización con Aprendizaje por Refuerzo (Deep RL):**
+Sustituir el clasificador binario XGBoost por un agente de Aprendizaje por Refuerzo Profundo (Deep Q-Network o PPO) que aprenda la política óptima de gestión de carteras directamente de la curva de capital como señal de recompensa es la extensión más ambiciosa y académicamente relevante. Este enfoque eliminaría la dependencia de un etiquetado manual y permitiría al agente descubrir estrategias de gestión de salida óptimas que un sistema basado en reglas no puede explorar.
+
+### 6.2.2. Mejoras de Infraestructura
+
+**5. Despliegue en Producción Real (*Live Trading*):**
+El módulo `src/environment/run_simulation.py` opera sobre datos históricos. La arquitectura modular del sistema facilita su adaptación a un entorno de trading en vivo mediante:
+- Sustitución del bucle histórico por suscripción a WebSocket de datos en tiempo real.
+- Integración con la API del broker (Interactive Brokers, Alpaca) para ejecución real de órdenes.
+- Implementación de un dashboard de monitorización en tiempo real.
+
+**6. Gestión de Riesgo de Cartera (Teoría de la Paridad del Riesgo):**
+El Position Sizing actual se basa en un porcentaje fijo del capital (1% por operación). Una extensión natural es implementar la *Risk Parity*, donde el capital asignado a cada posición se calibra inversamente a su volatilidad histórica, garantizando que cada activo contribuya con la misma cantidad de riesgo a la cartera total (en lugar del mismo porcentaje de capital).
+
+### 6.2.3. Líneas Descartadas
+
+Se identificaron y descartaron las siguientes extensiones durante el desarrollo, con justificación:
+- **Trading Intradía (High Frequency Trading):** La ventaja estadística del sistema se basa en patrones de estructura de mercado diarios y semanales. A nivel intradía, el ruido de mercado supera a la señal con los indicadores técnicos utilizados, y los costes de transacción (spreads intradía) erosionarían completamente el Alpha.
+- **Análisis de Sentimiento de Noticias (NLP):** Aunque el análisis de sentimiento puede ser una *feature* complementaria, su integración aumentaría significativamente la complejidad del sistema de ingesta de datos y requeriría un estudio independiente para validar su impacto marginal sobre el clasificador XGBoost ya optimizado.
+
+

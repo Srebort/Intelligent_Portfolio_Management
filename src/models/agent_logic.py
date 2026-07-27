@@ -46,7 +46,7 @@ class PortfolioAgent:
         self,
         model_path: str = "models/best_model.pkl",
         scaler_path: str = "models/scaler.pkl",
-        prob_threshold: float = 0.75,
+        prob_threshold: float = 0.60,
         vix_panic_threshold: float = 30.0,
         max_drawdown_limit: float = -0.10,
         kill_switch_days: int = 30,
@@ -54,6 +54,8 @@ class PortfolioAgent:
         time_stop_min_return: float = -0.03,
         max_correlation: float = 0.8,
         min_breadth_pct: float = 0.40,
+        cooldown_loss_days: int = 60,
+        cooldown_timestop_days: int = 30,
     ):
         """
         Inicializa el Agente de Cartera cargando los modelos de IA y configurando
@@ -67,6 +69,10 @@ class PortfolioAgent:
         self.time_stop_min_return = time_stop_min_return
         self.max_correlation = max_correlation
         self.min_breadth_pct = min_breadth_pct
+        self.cooldown_loss_days = cooldown_loss_days
+        self.cooldown_timestop_days = cooldown_timestop_days
+
+        self.ticker_cooldown: dict = {}
 
         # Estado interno del Kill-Switch
         self.peak_equity: float = 0.0
@@ -90,6 +96,33 @@ class PortfolioAgent:
             logger.error(f" Error cargando los modelos en {model_path}: {e}")
             self.model = None
             self.scaler = None
+
+    # -----------------------------------------------------------------------
+    # REGLA 0: COOLDOWN POR TICKER
+    # -----------------------------------------------------------------------
+    def register_trade_result(self, ticker: str, result: str, current_date: datetime) -> None:
+        """
+        Registra el resultado de un trade para aplicar el cooldown si corresponde.
+        result puede ser: 'LOSS', 'WIN', o 'TIME_STOP'
+        """
+        if result == "LOSS":
+            self.ticker_cooldown[ticker] = current_date + timedelta(days=self.cooldown_loss_days)
+            logger.info(f" 🥶 [Cooldown] {ticker} en enfriamiento por {self.cooldown_loss_days} días (Pérdida).")
+        elif result == "TIME_STOP":
+            self.ticker_cooldown[ticker] = current_date + timedelta(days=self.cooldown_timestop_days)
+            logger.info(f" 🥶 [Cooldown] {ticker} en enfriamiento por {self.cooldown_timestop_days} días (Time-Stop).")
+        # Si es WIN, no hay cooldown
+
+    def _is_in_cooldown(self, ticker: str, current_date: datetime) -> bool:
+        """
+        Comprueba si el ticker está bloqueado por cooldown tras una pérdida.
+        """
+        if ticker in self.ticker_cooldown:
+            if current_date < self.ticker_cooldown[ticker]:
+                return True
+            else:
+                del self.ticker_cooldown[ticker]
+        return False
 
     # -----------------------------------------------------------------------
     # REGLA 1: FILTRO VIX (Pánico Macroeconómico)
@@ -392,8 +425,8 @@ class PortfolioAgent:
             current_date = datetime.today()
 
         # --- GUARDIA 1: Kill-Switch Global ---
-        if self.check_kill_switch(current_equity, current_date):
-            return []
+        # if self.check_kill_switch(current_equity, current_date):
+        #     return []
 
         # --- GUARDIA 2: Filtro VIX ---
         if vix_value > 0 and self._is_vix_panic(vix_value):
@@ -423,6 +456,10 @@ class PortfolioAgent:
 
             ticker = row.get("ticker", f"Signal_{index}")
 
+            # --- FILTRO COOLDOWN ---
+            if self._is_in_cooldown(ticker, current_date):
+                continue
+
             # --- FILTRO IA: Probabilidad mínima ---
             if prob < self.prob_threshold:
                 logger.info(
@@ -431,9 +468,9 @@ class PortfolioAgent:
                 )
                 continue
 
-            # --- FILTRO CORRELACIÓN (Markowitz) ---
-            if self._is_too_correlated(ticker, approved_tickers):
-                continue
+                # --- GUARDIA 5: Límite de Correlación ---
+                if self._is_too_correlated(ticker, approved_tickers):
+                    continue
 
             logger.info(f" [IA] Señal APROBADA para {ticker} con prob={prob*100:.1f}%")
 
