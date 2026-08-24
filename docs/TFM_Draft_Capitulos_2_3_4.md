@@ -372,6 +372,37 @@ consumidos por el modelo de Machine Learning:
 El dataset resultante, exportado como `data/processed/V_ML_READY.csv`, contiene 47 columnas
 de características listas para entrenar el clasificador.
 
+### 3.4.3 Evolución hacia el Dataset Multi-Activo: `generate_multi_asset_dataset.py`
+
+El pipeline descrito en las secciones anteriores (`mtf_builder.py` → `dataset_cleaner.py`) fue diseñado, en la fase inicial del proyecto, para procesar **un único activo a la vez**, generando el fichero `V_ML_READY.csv`. Para entender por qué se construyó primero así y se centralizó después, es necesario comprender las tres fases que marcaron esta evolución:
+
+**Fase 1 — Validación del Pipeline Mono-Activo (Sprint 1):**
+El primer objetivo del proyecto no era entrenar el modelo de ML, sino asegurarse de que todo el sistema de ingesta y transformación de datos era correcto y reproducible. Ejecutar el pipeline sobre un único activo —por ejemplo, AAPL— permitió verificar en minutos que el `merge_asof` entre temporalidades no producía *lookahead bias*, que los indicadores técnicos se calculaban bien, y que la limpieza de NaNs funcionaba antes de invertir horas de computación en descargar decenas de activos. Esta arquitectura mono-activo cumplió exactamente ese propósito: **construir y verificar la unidad mínima funcional antes de escalar**, una práctica estándar de desarrollo iterativo (*Agile*).
+
+**Fase 2 — Problema Detectado: *Asset-Specific Bias*:**
+Al llegar al entrenamiento del modelo de Machine Learning, se identificó una limitación metodológica crítica: **un modelo entrenado sobre los datos de un único activo aprende comportamientos idiosincráticos de ese activo concreto** en lugar de patrones técnicos genuinamente generalizables. Por ejemplo, un modelo entrenado solo con AAPL puede aprender a asociar ciertas formaciones de velas con los periodos previos a los earnings trimestrales de Apple —un patrón que no existe en JNJ, BA o F—. Este fenómeno, conocido como *asset-specific bias*, invalidaría la capacidad del modelo para operar correctamente sobre cualquier activo no visto durante el entrenamiento, que es precisamente el escenario real de uso del sistema.
+
+**Fase 3 — Solución: El Orquestador Multi-Activo:**
+Para superar esta limitación, se diseñó `generate_multi_asset_dataset.py`. Su objetivo es **reutilizar exactamente la misma infraestructura de módulos ya validada** —`TiingoLoader`, `MTFBuilder`, `TierEvaluator` y `StrictBacktester`— ejecutándola en bucle sobre el universo completo de 45 activos del S&P 500 y concatenando todos los resultados en un único fichero consolidado:
+
+```
+Para cada Ticker ∈ Universo(45 activos):
+    1. TiingoLoader      → Descarga OHLCV (4H, 1D, 1W)
+    2. MTFBuilder        → Dataset Multi-Timeframe + indicadores técnicos
+    3. PriceAction       → Fractales, Wick Reclaims, Fibonacci
+    4. TierEvaluator     → Clasificación de señales en Tier A/B/C
+    5. StrictBacktester  → Etiquetado binario (Label=1 TP / Label=0 SL)
+    6. Concatenar        → Añadir columna 'Ticker' y agregar al dataset global
+
+Salida final: MULTI_LABELED_DATASET.csv (3.318 señales × 45 activos)
+```
+
+La separación entre la lógica de transformación (`mtf_builder.py`) y la lógica de orquestación (`generate_multi_asset_dataset.py`) garantiza que ambas capas son **independientemente testeables y mantenibles**: un cambio en la forma de calcular un indicador técnico no afecta a la lógica de iteración sobre el universo de activos, y viceversa.
+
+El dataset resultante, con 3.318 señales etiquetadas procedentes de 45 activos y más de 7 años de historia (2018–2025), proporciona la diversificación estadística necesaria para que los algoritmos de ML aprendan patrones técnicos genuinamente robustos y transferibles, superando el *overfitting* al que estaría expuesto cualquier modelo entrenado sobre un único activo o un subconjunto reducido del mercado [Gu et al., 2020].
+
+
+
 
 # ===========================================================================
 # CAPÍTULO 4: ARQUITECTURA DEL SISTEMA E INGENIERÍA DE CARACTERÍSTICAS
@@ -650,7 +681,26 @@ Para evitar esto, se ha implementado la clase `MLPipeline` (`src/models/ml_pipel
 2.  **Partición Cronológica Estricta (TimeSeriesSplit):** A diferencia de un problema de clasificación tradicional, los datos financieros poseen una fuerte dependencia temporal asimétrica. Se estableció una barrera temporal dura el 1 de enero de 2025. El ajuste de hiperparámetros de los modelos y la calibración empírica del umbral de decisión probabilístico (60%) se realizaron utilizando **exclusivamente** el conjunto de Entrenamiento (2010-2024) mediante los *folds* internos de la validación cruzada `TimeSeriesSplit`. El conjunto de Test (2025 en adelante) se mantuvo **totalmente bloqueado (*locked*)** hasta la fase final del proyecto, garantizando que su uso se limitó estrictamente a la evaluación *Out-Of-Sample* definitiva, previniendo la contaminación de la selección del modelo.
 3.  **Escalado:** Las variables numéricas son estandarizadas mediante `StandardScaler` (ajustado exclusivamente sobre los datos de entrenamiento) para garantizar un aprendizaje estable en algoritmos sensibles a la magnitud, como Support Vector Machines.
 
-### 4.5.2 Modelos Predictivos Base y Control del Sobreajuste
+### 4.5.2 Selección y Justificación de los Modelos Predictivos
+
+Antes de presentar la configuración técnica de cada modelo, es necesario explicar **por qué se escogieron estos cuatro algoritmos concretos** (Regresión Logística, SVM, Random Forest y XGBoost) y no otros disponibles en la literatura.
+
+El criterio de selección respondió a tres requisitos simultáneos, bien establecidos en la investigación de predicción financiera con Machine Learning [Gu et al., 2020; Biau & Scornet, 2016]:
+
+1. **Interpretabilidad y explicabilidad ante el tribunal:** Para un TFM de ingeniería, es insuficiente que un modelo funcione bien; es necesario poder razonar sobre *por qué* lo hace. Los cuatro modelos elegidos cuentan con mecanismos de interpretación estándar (coeficientes de regresión, función de margen del SVM, importancia de características del árbol) que permiten justificar las predicciones ante evaluadores no especializados en ML.
+
+2. **Cobertura del espacio de hipótesis:** Los modelos seleccionados cubren un espectro deliberadamente amplio de familias algorítmicas:
+   - **Regresión Logística:** Clasificador lineal paramétrico. Sirve como *baseline* estadístico absoluto y permite cuantificar cuánta ganancia aportan los modelos no lineales respecto a la solución más simple posible.
+   - **Support Vector Machine (SVM):** Clasificador no lineal basado en márgenes de decisión máximos con kernel Gaussiano (RBF). Robusto ante datos de alta dimensionalidad y eficiente con datasets de tamaño moderado como el disponible (3.318 muestras).
+   - **Random Forest:** Método de *Bagging* (ensemble por promediado) de árboles de decisión. Alta resistencia al ruido estadístico y al *overfitting* mediante la aleatorización de características en cada árbol.
+   - **XGBoost:** Método de *Boosting* secuencial que corrige iterativamente los errores de modelos previos. Representa el estado del arte en competiciones de predicción con datos tabulares estructurados [Chen & Guestrin, 2016].
+
+3. **Eficiencia computacional en entornos de investigación:** A diferencia de redes neuronales profundas (LSTM, Transformers) que requieren GPUs y miles de muestras por clase para estabilizar el gradiente, los cuatro modelos elegidos son entrenables en segundos sobre CPU estándar, lo que permite iterar rápidamente sobre hiperparámetros y versiones del dataset durante el desarrollo del proyecto.
+
+La **exclusión explícita de redes neuronales recurrentes (LSTM)** se justifica en la siguiente sección (4.5.3).
+
+### 4.5.3 Modelos Predictivos Base y Control del Sobreajuste
+
 
 Al trabajar con series temporales financieras y, especialmente en las fases iniciales del desarrollo con un dataset limitado, el riesgo de sobreajuste (*overfitting*) es severo. Si se permite que el modelo memorice el "ruido" del mercado, su capacidad de generalización en operaciones futuras reales se desploma.
 

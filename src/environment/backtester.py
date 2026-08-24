@@ -106,12 +106,12 @@ class StrictBacktester:
                 if tp_touch[tp_name] is None and row["high"] >= tp_price:
                     tp_touch[tp_name] = candle_num
 
-            # Activar BE: Tiers A, B y C al 1R (beneficio = riesgo inicial)
+            # Activar BE: Tiers A, B y C al 2R (beneficio = riesgo inicial * 2)
             if not be_activated and tier in ["A", "B", "C"]:
                 # Tomamos SL1_ATR como referencia de riesgo
                 ref_sl = sl_dict.get("SL1_ATR", next(iter(sl_dict.values())))
                 riesgo = precio_entrada - ref_sl
-                if row["high"] >= precio_entrada + riesgo:
+                if row["high"] >= precio_entrada + (riesgo * 1):
                     be_activated = True
 
         # Registrar resultados binarios y BE global

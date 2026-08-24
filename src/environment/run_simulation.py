@@ -47,20 +47,20 @@ SCALER_PATH     = "models/scaler.pkl"
 INITIAL_CAPITAL = 100_000.0          # Capital inicial en USD
 COMMISSION_RATE = 0.001              # 0.1% por operación
 SLIPPAGE_RATE   = 0.0005             # 0.05% de deslizamiento
-TIME_STOP_DAYS  = 9999               # Time-Stop: Desactivado temporalmente (antes 30)
+TIME_STOP_DAYS  = 9999              # Time-Stop: Desactivado temporalmente (antes 30)
 
 # Columnas de features EXACTAS que usó el MLPipeline en el Sprint 4
 # (obtenidas ejecutando: MLPipeline().prepare_features_and_target())
 FEATURES_COLS = [
-    'open', 'high', 'low', 'close', 'volume', 'RSI_14', 'ATR_14', 'NATR_14', 
+    'RSI_14', 'ATR_14', 'NATR_14', 
     'SMA_9', 'EMA_9', 'SMA_21', 'EMA_21', 'SMA_50', 'EMA_50', 'SMA_100', 'EMA_100', 
     'SMA_200', 'EMA_200', 'dist_SMA_50', 'slope_SMA_50', 'dist_SMA_200', 'slope_SMA_200', 
-    'atr_squeeze', 'is_bullish_divergence', 'close_1D', 'SMA_200_1D', 'dist_SMA_200_1D', 
-    'slope_SMA_200_1D', 'RSI_14_1D', 'is_bullish_divergence_1D', 'SMA_50_1D', 'close_1W', 
+    'atr_squeeze', 'is_bullish_divergence', 'SMA_200_1D', 'dist_SMA_200_1D', 
+    'slope_SMA_200_1D', 'RSI_14_1D', 'is_bullish_divergence_1D', 'SMA_50_1D',
     'SMA_200_1W', 'slope_SMA_200_1W', 'dist_SMA_200_1W', 'is_resistance_fractal', 
     'is_support_fractal', 'is_hammer', 'is_inverted_hammer', 'is_bullish_wick_reclaim', 
     'is_bearish_wick_reclaim', 'dist_fib_retr_382', 'dist_fib_retr_618', 'dist_fib_ext_up_382', 
-    'dist_fib_ext_up_618', 'dist_fib_ext_dn_382', 'dist_fib_ext_dn_618', 'impulso', 'BE_Hit',
+    'dist_fib_ext_up_618', 'dist_fib_ext_dn_382', 'dist_fib_ext_dn_618', 'impulso',
     'Tier_A', 'Tier_B', 'Tier_C'
 ]    # One-Hot Encoding de Tier (generado por MLPipeline con pd.get_dummies)
 
@@ -149,9 +149,8 @@ def run_simulation():
     agent = PortfolioAgent(
         model_path=MODEL_PATH,
         scaler_path=SCALER_PATH,
-        prob_threshold=0.60,
+        prob_threshold=0.0
     )
-
     exit_mgr = ExitManager(
         portfolio=portfolio,
         time_stop_days=TIME_STOP_DAYS,

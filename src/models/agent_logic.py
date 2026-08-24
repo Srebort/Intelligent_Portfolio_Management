@@ -54,7 +54,7 @@ class PortfolioAgent:
         time_stop_min_return: float = -0.03,
         max_correlation: float = 0.8,
         min_breadth_pct: float = 0.40,
-        cooldown_loss_days: int = 60,
+        cooldown_loss_days: int = 0,
         cooldown_timestop_days: int = 30,
     ):
         """
