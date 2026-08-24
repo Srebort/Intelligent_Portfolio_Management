@@ -47,7 +47,7 @@ SCALER_PATH     = "models/scaler.pkl"
 INITIAL_CAPITAL = 100_000.0          # Capital inicial en USD
 COMMISSION_RATE = 0.001              # 0.1% por operación
 SLIPPAGE_RATE   = 0.0005             # 0.05% de deslizamiento
-TIME_STOP_DAYS  = 9999              # Time-Stop: Desactivado temporalmente (antes 30)
+TIME_STOP_DAYS  = 30        # Time-Stop: Desactivado temporalmente (antes 30)
 
 # Columnas de features EXACTAS que usó el MLPipeline en el Sprint 4
 # (obtenidas ejecutando: MLPipeline().prepare_features_and_target())
@@ -149,7 +149,7 @@ def run_simulation():
     agent = PortfolioAgent(
         model_path=MODEL_PATH,
         scaler_path=SCALER_PATH,
-        prob_threshold=0.0
+        prob_threshold=0.32
     )
     exit_mgr = ExitManager(
         portfolio=portfolio,

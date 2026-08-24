@@ -22,13 +22,13 @@ class TradeSelectorXGB:
         """
         # Hiperparámetros por defecto optimizados para evitar overfitting
         default_params = {
-            'n_estimators': 100,         # Número de árboles moderado
-            'max_depth': 3,              # Árboles poco profundos
-            'learning_rate': 0.05,       # Aprendizaje lento
-            'subsample': 0.8,            # Usa el 80% de las filas por árbol
-            'colsample_bytree': 0.8,     # Usa el 80% de las columnas por árbol
-            'reg_alpha': 0.5,            # Regularización L1 (Lasso) - reduce pesos a 0
-            'reg_lambda': 1.0,           # Regularización L2 (Ridge) - penaliza pesos grandes
+            'n_estimators': 200,         # Número de árboles óptimo
+            'max_depth': 5,              # Árboles con profundidad óptima
+            'learning_rate': 0.1,        # Aprendizaje óptimo
+            'subsample': 1.0,            # Usa el 100% de las filas por árbol
+            'colsample_bytree': 0.6,     # Usa el 60% de las columnas por árbol
+            'reg_alpha': 1.0,            # Regularización L1 óptima
+            'reg_lambda': 1.0,           # Regularización L2 óptima
             'scale_pos_weight': 1.0,     # Ajustar si hay desbalanceo severo
             'random_state': 42,
             'eval_metric': 'logloss'

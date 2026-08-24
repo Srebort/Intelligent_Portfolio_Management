@@ -58,30 +58,25 @@ class BaseModel:
         return metrics
 
 class LogRegModel(BaseModel):
-    def __init__(self, C=0.05, class_weight='balanced', **kwargs):
+    def __init__(self, C=1.0, class_weight='balanced', penalty='l2', **kwargs):
         """
-        Regresión Logística.
-        Para un dataset pequeño (~133 filas), usamos regularización fuerte (C bajo)
-        para evitar que el modelo se aprenda de memoria el ruido (overfitting).
+        Regresión Logística con parámetros óptimos de GridSearchCV.
         """
-        model = LogisticRegression(C=C, class_weight=class_weight, random_state=42, max_iter=1000, **kwargs)
+        model = LogisticRegression(C=C, penalty=penalty, class_weight=class_weight, random_state=42, max_iter=2000, **kwargs)
         super().__init__("Logistic Regression", model)
 
 class SVMModel(BaseModel):
-    def __init__(self, C=0.5, kernel='rbf', probability=True, class_weight='balanced', **kwargs):
+    def __init__(self, C=5.0, kernel='rbf', probability=True, class_weight='balanced', gamma='auto', **kwargs):
         """
-        Support Vector Machine.
-        C=0.5 permite un margen más suave para generalizar mejor con pocos datos.
+        Support Vector Machine con parámetros óptimos de GridSearchCV.
         """
-        model = SVC(C=C, kernel=kernel, probability=probability, class_weight=class_weight, random_state=42, **kwargs)
+        model = SVC(C=C, kernel=kernel, probability=probability, class_weight=class_weight, gamma=gamma, random_state=42, **kwargs)
         super().__init__("Support Vector Machine", model)
 
 class RandomForestModel(BaseModel):
-    def __init__(self, n_estimators=50, max_depth=3, min_samples_split=5, min_samples_leaf=3, class_weight='balanced', **kwargs):
+    def __init__(self, n_estimators=200, max_depth=None, min_samples_split=2, min_samples_leaf=1, class_weight='balanced', **kwargs):
         """
-        Random Forest.
-        Con un dataset pequeño, árboles profundos memorizan fácilmente el dataset.
-        Limitamos max_depth a 3 y min_samples_leaf a 3 para forzar la generalización.
+        Random Forest con parámetros óptimos de GridSearchCV.
         """
         model = RandomForestClassifier(
             n_estimators=n_estimators, 
