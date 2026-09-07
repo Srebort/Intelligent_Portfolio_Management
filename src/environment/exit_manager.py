@@ -126,7 +126,7 @@ class ExitManager:
             be_activated = meta.get("be_activated", False)
             #if not be_activated and stop_loss is not None:
             #    riesgo = entry_price - stop_loss
-            #    if riesgo > 0 and current_price >= (entry_price + (riesgo * 2)):
+            #    if riesgo > 0 and current_price >= (entry_price + (riesgo * 1)):
             #        meta["be_activated"] = True
             #        be_activated = True
             #        logger.info(f"[ExitManager] Break Even activado para {ticker} (+1R)")

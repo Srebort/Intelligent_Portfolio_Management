@@ -149,7 +149,7 @@ def run_simulation():
     agent = PortfolioAgent(
         model_path=MODEL_PATH,
         scaler_path=SCALER_PATH,
-        prob_threshold=0.32
+        prob_threshold=0.320,
     )
     exit_mgr = ExitManager(
         portfolio=portfolio,
