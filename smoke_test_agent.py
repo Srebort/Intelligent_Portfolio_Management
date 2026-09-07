@@ -49,8 +49,8 @@ def run_tier_c_test(ticker: str, verbose: bool = False) -> dict:
     evaluator = TierEvaluator(fib_tolerance=1.5, max_sma_dist=5.0)
     df_eval = evaluator.evaluate_dataframe(df)
 
-    # Extraer solo señales Tier C
-    df_c = df_eval[df_eval["Tier"] == "B"].copy()
+    # Extraer TODAS las señales válidas (Tier A, B y C)
+    df_c = df_eval[df_eval["Tier"].isin(["A", "B", "C"])].copy()
 
     # ------------------------------------------------------------------
     # Imprimir todos los fractales de resistencia encontrados (verbose)
@@ -153,7 +153,10 @@ def run_tier_c_test(ticker: str, verbose: bool = False) -> dict:
                 fecha_cierre = df_eval.index[idx_cierre] if idx_cierre and idx_cierre < len(df_eval) else fecha
             except Exception:
                 fecha_cierre = fecha
-            trades_list.append((fecha_cierre, pnl_neto))
+            
+            # Guardamos el P&L, el resultado (1=win, 0=loss) y el Tier
+            is_win = 1 if pnl_neto > 0 else 0
+            trades_list.append((fecha_cierre, pnl_neto, is_win, row.get("Tier", "Unknown")))
             
         if verbose:
             emoji_res = "✅ WIN" if resultado == 1 else "❌ LOSS" if resultado == 0 else "❓"
@@ -206,13 +209,14 @@ def run_tier_c_test(ticker: str, verbose: bool = False) -> dict:
         # Imprimir resumen final para esta acción
     win_rate = (wins / total) * 100 if total > 0 else 0
     pnl_str = f"+${total_net_pnl:,.0f}" if total_net_pnl > 0 else f"-${abs(total_net_pnl):,.0f}"
-    print(f"\n{'='*70}")
-    print(f"  RESUMEN FINAL — {ticker}")
-    print(f"  Total Señales : {total}")
-    print(f"  Wins          : {wins} ✅")
-    print(f"  Win Rate      : {win_rate:.1f}%")
-    print(f"  P&L Neto      : {pnl_str}")
-    print(f"{'='*70}\n")
+    if verbose:
+        print(f"\n{'='*70}")
+        print(f"  RESUMEN FINAL — {ticker}")
+        print(f"  Total Señales : {total}")
+        print(f"  Wins          : {wins} ✅")
+        print(f"  Win Rate      : {win_rate:.1f}%")
+        print(f"  P&L Neto      : {pnl_str}")
+        print(f"{'='*70}\n")
 
     return {
         "ticker": ticker,
@@ -278,24 +282,79 @@ def run_all_tickers():
         current_equity = 100_000  # Capital inicial asumido para %
         peak_equity = 100_000
         max_dd_abs = 0.0
-        max_dd_rel = 0.0
         
-        import numpy as np
-        for _, pnl in all_global_trades:
-            current_equity += pnl
+        # Breakdown por Tiers
+        tiers_stats = {}
+        # En all_global_trades guardamos ahora tuplas de 4: (fecha, pnl, is_win, tier)
+        # O de 2: (fecha, pnl) en caso de que vinieran de corridas antiguas (para compatibilidad si lo llamamos fuera)
+        for trade in all_global_trades:
+            if len(trade) >= 4:
+                tier = trade[3]
+                pnl = trade[1]
+                is_win = trade[2]
+            else:
+                tier = "Unknown"
+                pnl = trade[1]
+                is_win = 1 if pnl > 0 else 0
+                
+            if tier not in tiers_stats:
+                tiers_stats[tier] = {
+                    "total": 0, "wins": 0, "pnl": 0.0,
+                    "gross_profit": 0.0, "gross_loss": 0.0,
+                    "current_streak": 0, "max_losing_streak": 0,
+                    "current_equity": 100_000, "peak_equity": 100_000, "max_dd_rel": 0.0
+                }
+            
+            ts = tiers_stats[tier]
+            ts["total"] += 1
+            ts["wins"] += is_win
+            ts["pnl"] += pnl
+            
+            if pnl > 0:
+                ts["gross_profit"] += pnl
+                ts["current_streak"] = 0
+            else:
+                ts["gross_loss"] += abs(pnl)
+                ts["current_streak"] += 1
+                if ts["current_streak"] > ts["max_losing_streak"]:
+                    ts["max_losing_streak"] = ts["current_streak"]
+                    
+            ts["current_equity"] += pnl
+            if ts["current_equity"] > ts["peak_equity"]:
+                ts["peak_equity"] = ts["current_equity"]
+            
+            dd_rel = ((ts["peak_equity"] - ts["current_equity"]) / ts["peak_equity"]) * 100 if ts["peak_equity"] > 0 else 0
+            if dd_rel > ts["max_dd_rel"]:
+                ts["max_dd_rel"] = dd_rel
+            
+        print("-" * 55)
+        print("  DESGLOSE POR TIERS (Advanced):")
+        for t in sorted(tiers_stats.keys()):
+            s = tiers_stats[t]
+            if s["total"] > 0:
+                wr = (s["wins"] / s["total"]) * 100
+                pnl_str = f"+${s['pnl']:,.0f}" if s['pnl'] >= 0 else f"-${abs(s['pnl']):,.0f}"
+                pf = (s["gross_profit"] / s["gross_loss"]) if s["gross_loss"] > 0 else 999.0
+                print(f"    Tier {t}: {s['total']} ops | Win Rate: {wr:.1f}% | P&L: {pnl_str} | Max DD: -{s['max_dd_rel']:.2f}% | Profit Factor: {pf:.2f} | Racha Max: {s['max_losing_streak']}")
+
+        print("-" * 55)
+        
+        # Calculate max drawdown
+        max_dd_rel = 0.0
+        current_equity = 100_000
+        peak_equity = 100_000
+        for trade in all_global_trades:
+            current_equity += trade[1]
             if current_equity > peak_equity:
                 peak_equity = current_equity
             
             dd_abs = peak_equity - current_equity
-            dd_rel = (dd_abs / peak_equity) * 100 if peak_equity > 0 else 0
-            
-            if dd_abs > max_dd_abs: max_dd_abs = dd_abs
             if dd_rel > max_dd_rel: max_dd_rel = dd_rel
             
         max_dd_abs_pct = (max_dd_abs / 100_000) * 100
-        
-        # Advanced Metrics
-        returns = np.array([pnl for _, pnl in all_global_trades])
+        # Calculate Sharpe
+        import numpy as np
+        returns = np.array([trade[1] for trade in all_global_trades])
         tpy = len(returns) / 10.0  # ~10 years
         mean_return = np.mean(returns) if len(returns) > 0 else 0
         std_return = np.std(returns) if len(returns) > 0 else 0
@@ -317,7 +376,36 @@ def run_all_tickers():
                 max_streak = max(max_streak, current_streak)
             elif r > 0:
                 current_streak = 0
+
+        # Breakdown por Tiers
+        tiers_stats = {}
+        # En all_global_trades guardamos ahora tuplas de 4: (fecha, pnl, is_win, tier)
+        # O de 2: (fecha, pnl) en caso de que vinieran de corridas antiguas (para compatibilidad si lo llamamos fuera)
+        for trade in all_global_trades:
+            if len(trade) >= 4:
+                tier = trade[3]
+                pnl = trade[1]
+                is_win = trade[2]
+            else:
+                tier = "Unknown"
+                pnl = trade[1]
+                is_win = 1 if pnl > 0 else 0
                 
+            if tier not in tiers_stats:
+                tiers_stats[tier] = {"total": 0, "wins": 0, "pnl": 0.0}
+            tiers_stats[tier]["total"] += 1
+            tiers_stats[tier]["wins"] += is_win
+            tiers_stats[tier]["pnl"] += pnl
+            
+        print("-" * 55)
+        print("  DESGLOSE POR TIERS:")
+        for t in sorted(tiers_stats.keys()):
+            s = tiers_stats[t]
+            if s["total"] > 0:
+                wr = (s["wins"] / s["total"]) * 100
+                pnl_str = f"+${s['pnl']:,.0f}" if s['pnl'] >= 0 else f"-${abs(s['pnl']):,.0f}"
+                print(f"    Tier {t}: {s['total']} ops | Win Rate: {wr:.1f}% | P&L: {pnl_str}")
+
         print("-" * 55)
         print(f"  MAX DRAWDOWN (Absoluto) : -{max_dd_abs_pct:.2f}% (-${max_dd_abs:,.0f})")
         print(f"  MAX DRAWDOWN (Dinámico) : -{max_dd_rel:.2f}%")
@@ -327,25 +415,22 @@ def run_all_tickers():
         print(f"  MAX RACHA PÉRDIDAS      : {max_streak} operaciones")
         
         # Breakdown por periodos de 2 años
-        periodos = {
-            "2018-2019": 0.0,
-            "2020-2021": 0.0,
-            "2022-2023": 0.0,
-            "2024-2025": 0.0,
-            "2026-2027": 0.0
-        }
+        periodos = {}
         import pandas as pd
-        for fecha, pnl in all_global_trades:
-            year = pd.to_datetime(fecha).year
-            if 2018 <= year <= 2019: periodos["2018-2019"] += pnl
-            elif 2020 <= year <= 2021: periodos["2020-2021"] += pnl
-            elif 2022 <= year <= 2023: periodos["2022-2023"] += pnl
-            elif 2024 <= year <= 2025: periodos["2024-2025"] += pnl
-            elif 2026 <= year <= 2027: periodos["2026-2027"] += pnl
+        for trade in all_global_trades:
+            fecha, pnl = trade[0], trade[1]
+            try:
+                year = pd.to_datetime(fecha).year
+                if str(year) not in periodos:
+                    periodos[str(year)] = 0.0
+                periodos[str(year)] += pnl
+            except Exception:
+                pass
             
         print("-" * 55)
-        print("  DESGLOSE P&L POR PERIODOS (2 AÑOS):")
-        for periodo, pnl_periodo in periodos.items():
+        print("  DESGLOSE P&L POR PERIODOS (AÑO POR AÑO):")
+        for periodo in sorted(periodos.keys()):
+            pnl_periodo = periodos[periodo]
             pnl_str_per = f"+${pnl_periodo:,.0f}" if pnl_periodo >= 0 else f"-${abs(pnl_periodo):,.0f}"
             print(f"    {periodo} : {pnl_str_per:>10}")
         
