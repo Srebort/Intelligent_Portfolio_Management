@@ -57,11 +57,16 @@ class MLPipeline:
 
         cols_to_drop = []
         
+        # Columnas que revelan el futuro de forma directa
+        explicit_leakage = ['BE_Hit']
+        
         for col in self.df.columns:
             # Eliminar columnas de precios de TP/SL, velas de ejecución, hits y etiquetas alternativas
-            if col.endswith('_precio') or col.endswith('_vela') or col.endswith('_hit'):
+            if col.endswith('_precio') or col.endswith('_vela') or col.endswith('_hit') or col.endswith('_Hit'):
                 cols_to_drop.append(col)
             elif col.startswith('label_'):
+                cols_to_drop.append(col)
+            elif col in explicit_leakage:
                 cols_to_drop.append(col)
                 
         # Mantener solo 'Label' como objetivo
@@ -77,7 +82,7 @@ class MLPipeline:
         Maneja valores nulos y variables categóricas (como 'Tier').
         """
         if drop_cols is None:
-            drop_cols = ['fecha_entrada', 'Ticker']
+            drop_cols = ['fecha_entrada', 'Ticker', 'open', 'high', 'low', 'close', 'volume', 'close_1D', 'close_1W']
             
         # Eliminar NaNs
         before_drop = len(self.df)
